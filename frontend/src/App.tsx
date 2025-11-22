@@ -6,7 +6,6 @@ function App() {
 
   return (
     <>
-      {/*<h1>Teste</h1>*/}
       <TokenProvider>
         <RouterProvider router={Router} />
       </TokenProvider>

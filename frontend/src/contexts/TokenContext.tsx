@@ -1,14 +1,31 @@
-import { createContext, useState } from "react";
-import { Token } from "../types/Token";
-import { Children } from "../types/Children";
+import { createContext, ReactNode, useState } from "react";
 
-export const TokenContext = createContext<Token | null>(null);
+type TokenContextType = {
+  token: string | null;
+  setToken: (token: string) => void;
+};
 
-export const TokenProvider = ({ children }: Children) => {
-  const [token, setToken] = useState("");
+export const TokenContext = createContext<TokenContextType | null>(null);
+
+type TokenProviderProps = {
+  children: ReactNode;
+};
+
+export const TokenProvider = ({ children }: TokenProviderProps) => {
+  const [token, setTokenState] = useState<string | null>(() => {
+    // Pega o token do localStorage na inicialização
+    return localStorage.getItem('spotify-token');
+  });
+
+  const setToken = (newToken: string) => {
+    // Salva o token no localStorage e no estado
+    localStorage.setItem('spotify-token', newToken);
+    setTokenState(newToken);
+  };
+
   return (
     <TokenContext.Provider value={{ token, setToken }}>
-      { children }
+      {children}
     </TokenContext.Provider>
   );
-}
+};

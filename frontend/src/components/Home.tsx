@@ -1,10 +1,32 @@
 
+import { useContext, useEffect, useState } from "react";
+import { TokenContext } from "../contexts/TokenContext";
+import { requester } from "../utils/api";
+
 const Home = () => {
+  const tokenCtx = useContext(TokenContext);
+  const [me, setMe] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (tokenCtx?.token) {
+        try {
+          const { data } = await requester({
+            Authorization: tokenCtx.token
+          }).get("/me");
+          setMe(data);
+        } catch (error) {
+          console.error("Erro ao buscar dados do usuário:", error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [tokenCtx?.token]);
+
   return (
     <>
-      {/*Esta tela deve ser de uma rota privada*/}
-      {/*Devo implementar isso unsando ContextAPI*/}
-      <h1>Home</h1>
+      <h1>Home - Bem-vindo(a), {me?.display_name || 'usuário'}!</h1>
     </>
   )
 }
