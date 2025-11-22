@@ -7,7 +7,7 @@ import { TokenContext } from "../contexts/TokenContext";
 
 const Router = createBrowserRouter([
   {
-    path: '/',
+    path: '/login',
     Component() {
       return (
         <Login />
@@ -23,7 +23,7 @@ const Router = createBrowserRouter([
     }
   },
   {
-    path: '/home',
+    path: '/',
     element: <PrivateRoute><Home /></PrivateRoute>
   }
 ]);

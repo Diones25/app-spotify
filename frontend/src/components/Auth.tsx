@@ -13,7 +13,7 @@ const Auth = () => {
     if (accessToken) {
       const bearerToken = `Bearer ${accessToken}`;
       tokenCtx?.setToken(bearerToken);
-      navigate('/home');
+      navigate('/');
     }
   }, [token, tokenCtx, navigate]);
 
