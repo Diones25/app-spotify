@@ -1,21 +1,23 @@
 import { useContext, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { TokenContext } from "../contexts/TokenContext";
 
 const Auth = () => {
-  const { token } = useParams();
   const tokenCtx = useContext(TokenContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const accessToken = token?.split('&')[0].replace('token=', '');
+    // Usa URLSearchParams para ler os tokens da query string da URL
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get('token');
+    const refreshToken = params.get('refresh_token');
 
-    if (accessToken) {
-      const bearerToken = `Bearer ${accessToken}`;
-      tokenCtx?.setToken(bearerToken);
+    if (accessToken && refreshToken && tokenCtx) {
+      // Salva ambos os tokens usando a nova função do contexto
+      tokenCtx.setTokens(accessToken, refreshToken);
       navigate('/');
     }
-  }, [token, tokenCtx, navigate]);
+  }, [tokenCtx, navigate]);
 
   return (
     <>
