@@ -15,7 +15,7 @@ const Router = createBrowserRouter([
     }
   },
   {
-    path: '/auth/:token',
+    path: '/auth',
     Component() {
       return (
         <Auth />
@@ -30,7 +30,7 @@ const Router = createBrowserRouter([
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const tokenCtx = useContext(TokenContext);
-  return tokenCtx?.token ? children : <Navigate to="/" />;
+  return tokenCtx?.accessToken ? children : <Navigate to="/login" />;
 }
 
 export default Router;
