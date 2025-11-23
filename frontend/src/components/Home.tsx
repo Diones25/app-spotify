@@ -10,11 +10,23 @@ const Home = () => {
   const [me, setMe] = useState<UserProfile>();
 
   useEffect(() => {
+    // Captura os tokens da URL na primeira renderização
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    const urlRefreshToken = params.get('refresh_token');
+
+    if (urlToken && urlRefreshToken && tokenCtx) {
+      tokenCtx.setTokens(urlToken, urlRefreshToken);
+      // Limpa a URL para não exibir os tokens
+      window.history.replaceState({}, document.title, "/");
+    }
+
     const fetchUserData = async () => {
-      if (tokenCtx?.token) {
+      // Usa o accessToken do contexto
+      if (tokenCtx?.accessToken) {
         try {
           const { data } = await requester({
-            Authorization: tokenCtx.token
+            Authorization: `Bearer ${tokenCtx.accessToken}`
           }).get("/me");
           setMe(data);
         } catch (error) {
@@ -24,7 +36,7 @@ const Home = () => {
     };
 
     fetchUserData();
-  }, [tokenCtx?.token]);
+  }, [tokenCtx]);
 
   return (
     <>
