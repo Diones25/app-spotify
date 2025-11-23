@@ -87,7 +87,7 @@ const callback = async (req: Request, res: Response) => {
 
       // Redireciona com os tokens obtidos
       res.redirect(
-        `${process.env.REDIRECT_FRONT_END}` +
+        `${process.env.REDIRECT_FRONT_END}?` +
         querystring.stringify({
           token: access_token,
           refresh_token: refresh_token,
