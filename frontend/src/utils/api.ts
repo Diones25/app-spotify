@@ -1,4 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
+import type { AxiosResponse } from 'axios';
+
 
 export const requester = (config: any, contentType?: string): any => {
   const service = axios.create({
