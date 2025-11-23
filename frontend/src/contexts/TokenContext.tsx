@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useState } from "react";
+import { createContext, useState, type ReactNode } from "react";
 
 type TokenContextType = {
   token: string | null;
