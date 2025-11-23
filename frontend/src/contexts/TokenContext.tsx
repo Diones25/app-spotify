@@ -1,8 +1,10 @@
 import { createContext, useState, type ReactNode } from "react";
 
 type TokenContextType = {
-  token: string | null;
-  setToken: (token: string) => void;
+  accessToken: string | null;
+  refreshToken: string | null;
+  setTokens: (access: string, refresh: string) => void;
+  setAccessToken: (access: string) => void;
 };
 
 export const TokenContext = createContext<TokenContextType | null>(null);
@@ -12,19 +14,28 @@ type TokenProviderProps = {
 };
 
 export const TokenProvider = ({ children }: TokenProviderProps) => {
-  const [token, setTokenState] = useState<string | null>(() => {
-    // Pega o token do localStorage na inicialização
-    return localStorage.getItem('spotify-token');
+  const [accessToken, setAccessTokenState] = useState<string | null>(() => {
+    return localStorage.getItem('spotify-access-token');
   });
 
-  const setToken = (newToken: string) => {
-    // Salva o token no localStorage e no estado
-    localStorage.setItem('spotify-token', newToken);
-    setTokenState(newToken);
+  const [refreshToken, setRefreshTokenState] = useState<string | null>(() => {
+    return localStorage.getItem('spotify-refresh-token');
+  });
+
+  const setTokens = (newAccessToken: string, newRefreshToken: string) => {
+    localStorage.setItem('spotify-access-token', newAccessToken);
+    localStorage.setItem('spotify-refresh-token', newRefreshToken);
+    setAccessTokenState(newAccessToken);
+    setRefreshTokenState(newRefreshToken);
+  };
+
+  const setAccessToken = (newAccessToken: string) => {
+    localStorage.setItem('spotify-access-token', newAccessToken);
+    setAccessTokenState(newAccessToken);
   };
 
   return (
-    <TokenContext.Provider value={{ token, setToken }}>
+    <TokenContext.Provider value={{ accessToken, refreshToken, setTokens, setAccessToken }}>
       {children}
     </TokenContext.Provider>
   );
