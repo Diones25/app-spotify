@@ -2,10 +2,11 @@
 import { useContext, useEffect, useState } from "react";
 import { TokenContext } from "../contexts/TokenContext";
 import { requester } from "../utils/api";
+import type { UserProfile } from "@/types/UserProfile";
 
 const Home = () => {
   const tokenCtx = useContext(TokenContext);
-  const [me, setMe] = useState<any>(null);
+  const [me, setMe] = useState<UserProfile>();
 
   useEffect(() => {
     const fetchUserData = async () => {
