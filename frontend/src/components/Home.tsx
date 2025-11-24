@@ -20,8 +20,9 @@ const Home = () => {
   }
 
   return (
+
     <>
-      <div className="bg-red-300 h-12 mt-2 mb-2 flex items-center justify-between">
+      <div className="h-12 mt-2 mb-2 mx-2 flex items-center justify-between rounded">
         <div>
           <img src={LogoIcon} alt="" className="w-12" />
         </div>
@@ -45,19 +46,33 @@ const Home = () => {
           <img src={LogoIcon} alt="" className="w-12" />
         </div>
       </div>
+      <div className="h-screen bg-black pr-2 pl-2">
+        <div className="grid grid-cols-[1fr_2fr_1fr] gap-2 h-full">
+          {/* Left Sidebar */}
+          <div className="bg-[#121212] rounded-lg overflow-hidden p-4 text-white">
+            <h2 className="font-bold mb-4">Sua biblioteca</h2>
+            {/* Placeholder for Library content */}
+            <div className="text-gray-400 text-sm">Library content goes here</div>
+          </div>
 
+          {/* Main Content */}
+          <div className="bg-[#121212] rounded-lg overflow-hidden flex flex-col">
+            <div className="p-4 flex-1 overflow-y-auto">
+              <h1 className="text-white text-2xl font-bold">Home - Bem-vindo(a), {me?.display_name || 'usuário'}!</h1>
+            </div>
+          </div>
 
+          {/* Right Sidebar */}
+          <div className="bg-[#121212] rounded-lg overflow-hidden p-4 text-white">
+            <h2 className="font-bold mb-4">Friend Activity</h2>
+            {/* Placeholder for Friend Activity */}
+            <div className="text-gray-400 text-sm">Friend activity goes here</div>
+          </div>
+        </div>
+      </div>
 
-      
-
-
-
-
-
-
-
-      <h1 className="text-white">Home - Bem-vindo(a), {me?.display_name || 'usuário'}!</h1>
     </>
+    
   )
 }
 
