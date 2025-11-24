@@ -1,3 +1,4 @@
+import type { UserProfile } from '@/types/UserProfile';
 import axios from 'axios';
 import type { AxiosResponse } from 'axios';
 
@@ -60,6 +61,11 @@ export const requester = (config: any, contentType?: string): any => {
   );
 
   return {
+    async getMe(): Promise<UserProfile> {
+      const response = await service.get(`/me`);
+      return response.data;
+    },
+
     async get<T = any>(uri: string): Promise<AxiosResponse<T>> {
       const response = await service.get<T>(uri);
       return response;

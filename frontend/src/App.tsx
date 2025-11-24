@@ -1,14 +1,17 @@
 import { RouterProvider } from "react-router-dom";
 import Router from "./router/router";
 import { TokenProvider } from "./contexts/TokenContext";
+import { Providers } from "./utils/providers";
 
 function App() {
 
   return (
     <>
-      <TokenProvider>
-        <RouterProvider router={Router} />
-      </TokenProvider>
+      <Providers>
+        <TokenProvider>
+          <RouterProvider router={Router} />
+        </TokenProvider>
+      </Providers>
     </>
   )
 }
