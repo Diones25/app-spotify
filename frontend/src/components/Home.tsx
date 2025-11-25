@@ -2,6 +2,7 @@
 import { useContext, useState } from "react";
 import { TokenContext } from "../contexts/TokenContext";
 import LogoIcon from "../../public/logo_icon.png";
+import ImageNotFound from "../../public/image-not-found.jpg";
 import { useMe, useUserPlaylists } from "@/utils/queries";
 import { Search } from "lucide-react";
 import { Input } from "./ui/input";
@@ -10,6 +11,7 @@ import {
   TabsContent,
 } from "@/components/ui/tabs"
 import { Button } from "./ui/button";
+import { ScrollArea } from "./ui/scroll-area";
 
 const Home = () => {
   const tokenCtx = useContext(TokenContext);
@@ -66,14 +68,14 @@ const Home = () => {
           <img src={LogoIcon} alt="" className="w-12" />
         </div>
       </div>
-      <div className="h-screen bg-black pr-2 pl-2">
+      <div className="h-[90vh] bg-[#121212black pr-2 pl-2">
         <div className="grid grid-cols-[1fr_2fr_1fr] gap-2 h-full">
           {/* Left Sidebar */}
           <div className="bg-[#121212] rounded-lg overflow-hidden p-4 text-white">
             <h2 className="font-bold mb-4">Sua biblioteca</h2>
             
             {/* Tabs da biblioteca - Playlist, Artistas, Álbums */}
-            <div className="flex w-full max-w-sm flex-col gap-6">
+            <div className="flex flex-col gap-6">
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 
                 {/* Tabs da biblioteca - Playlist, Artistas, Álbums */}
@@ -102,7 +104,89 @@ const Home = () => {
                 {/* Fim -Tabs da biblioteca - Playlist, Artistas, Álbums */}
 
                 <TabsContent value="playlist">
-                  <h1>Playlist</h1>
+                  <ScrollArea className="h-[76vh] w-full rounded-md ">
+                    {/* Lista de Playlists */}
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
+                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
+                      <div className="ml-3">
+                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
+                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
+                      </div>
+                    </div>
+                    
+                  </ScrollArea>
                 </TabsContent>
                 <TabsContent value="artistas">
                   <h2>Artistas</h2>
@@ -130,7 +214,10 @@ const Home = () => {
           </div>
         </div>
       </div>
-
+      
+      <div className="bg-blue-500">
+          ...
+      </div>
     </>
     
   )
