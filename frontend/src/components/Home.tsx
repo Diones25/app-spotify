@@ -8,8 +8,6 @@ import { Input } from "./ui/input";
 import {
   Tabs,
   TabsContent,
-  TabsList,
-  TabsTrigger,
 } from "@/components/ui/tabs"
 import { Button } from "./ui/button";
 
