@@ -66,6 +66,11 @@ export const requester = (config: any, contentType?: string): any => {
       return response.data;
     },
 
+    async getUserPlaylists(user_id: string) {
+      const response = await service.get(`/users/${user_id}/playlists`);
+      return response.data;
+    },
+
     async get<T = any>(uri: string): Promise<AxiosResponse<T>> {
       const response = await service.get<T>(uri);
       return response;

@@ -2,7 +2,7 @@
 import { useContext, useState } from "react";
 import { TokenContext } from "../contexts/TokenContext";
 import LogoIcon from "../../public/logo_icon.png";
-import { useMe } from "@/utils/queries";
+import { useMe, useUserPlaylists } from "@/utils/queries";
 import { Search } from "lucide-react";
 import { Input } from "./ui/input";
 import {
@@ -22,6 +22,12 @@ const Home = () => {
   };
 
   const { data: me, isLoading, isError, error } = useMe(tokenCtx?.accessToken || '');
+  const {
+    data: userPlaylists,
+    isLoading: isLoadingPlaylists,
+    isError: isErrorPlaylists,
+    error: errorPlaylists
+  } = useUserPlaylists(tokenCtx?.accessToken || '', me?.id || '');
 
   if (isLoading) {
     return <div className="text-white">Carregando informações do usuário...</div>;
@@ -112,7 +118,7 @@ const Home = () => {
           {/* Main Content */}
           <div className="bg-[#121212] rounded-lg overflow-hidden flex flex-col">
             <div className="p-4 flex-1 overflow-y-auto">
-              <h1 className="text-white text-2xl font-bold">Home - Bem-vindo(a), {me?.display_name || 'usuário'}!</h1>
+              <h1 className="text-white text-2xl font-bold">Home - Bem-vindo(a), {me?.display_name || 'usuário'}! seu id é: { me?.id}</h1>
             </div>
           </div>
 
