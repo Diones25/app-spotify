@@ -1,14 +1,27 @@
 
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { TokenContext } from "../contexts/TokenContext";
 import LogoIcon from "../../public/logo_icon.png";
 import { useMe } from "@/utils/queries";
 import { Search } from "lucide-react";
 import { Input } from "./ui/input";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 import { Button } from "./ui/button";
 
 const Home = () => {
   const tokenCtx = useContext(TokenContext);
+  // 1. Estado para rastrear a aba ativa.
+  const [activeTab, setActiveTab] = useState("playlist");
+
+  // Função para mudar a aba.
+  const handleTabChange = (tabValue: string) => {
+    setActiveTab(tabValue);
+  };
 
   const { data: me, isLoading, isError, error } = useMe(tokenCtx?.accessToken || '');
 
@@ -52,12 +65,48 @@ const Home = () => {
           {/* Left Sidebar */}
           <div className="bg-[#121212] rounded-lg overflow-hidden p-4 text-white">
             <h2 className="font-bold mb-4">Sua biblioteca</h2>
-            {/* Placeholder for Library content */}
-            <div className="">
-              <Button className="bg-[#333333] hover:bg-[#333333]/70 rounded-full">Playlist</Button>
-              <Button className="bg-[#333333] hover:bg-[#333333]/70 rounded-full mx-2">Artistas</Button>
-              <Button className="bg-[#333333] hover:bg-[#333333]/70 rounded-full">Álbums</Button>
+            
+            {/* Tabs da biblioteca - Playlist, Artistas, Álbums */}
+            <div className="flex w-full max-w-sm flex-col gap-6">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                
+                {/* Tabs da biblioteca - Playlist, Artistas, Álbums */}
+                <div className="">
+                  <Button
+                    className="bg-[#333333] hover:bg-[#333333]/70 rounded-full"
+                    onClick={() => handleTabChange("playlist")}
+                  >
+                    Playlist
+                  </Button>
+
+                  <Button
+                    className="bg-[#333333] hover:bg-[#333333]/70 rounded-full mx-2"
+                    onClick={() => handleTabChange("artistas")}
+                  >
+                    Artistas
+                  </Button>
+
+                  <Button
+                    className="bg-[#333333] hover:bg-[#333333]/70 rounded-full"
+                    onClick={() => handleTabChange("albuns")}
+                  >
+                    Álbums
+                  </Button>
+                </div>
+                {/* Fim -Tabs da biblioteca - Playlist, Artistas, Álbums */}
+
+                <TabsContent value="playlist">
+                  <h1>Playlist</h1>
+                </TabsContent>
+                <TabsContent value="artistas">
+                  <h2>Artistas</h2>
+                </TabsContent>
+                <TabsContent value="albuns">
+                  <h2>Álbuns</h2>
+                </TabsContent>
+              </Tabs>
             </div>
+            {/* Fim -Tabs da biblioteca - Playlist, Artistas, Álbums */}
           </div>
 
           {/* Main Content */}
