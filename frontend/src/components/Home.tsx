@@ -28,6 +28,8 @@ const Home = () => {
   }
 
   if (isError) {
+    // Redireciona para a URL atual (causando uma recarga completa)
+    window.location.href = window.location.href;
     return <div className="text-white">Erro ao buscar dados: {error.message}</div>;
   }
 
