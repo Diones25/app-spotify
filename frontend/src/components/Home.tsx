@@ -5,6 +5,7 @@ import LogoIcon from "../../public/logo_icon.png";
 import { useMe } from "@/utils/queries";
 import { Search } from "lucide-react";
 import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 const Home = () => {
   const tokenCtx = useContext(TokenContext);
@@ -52,7 +53,11 @@ const Home = () => {
           <div className="bg-[#121212] rounded-lg overflow-hidden p-4 text-white">
             <h2 className="font-bold mb-4">Sua biblioteca</h2>
             {/* Placeholder for Library content */}
-            <div className="text-gray-400 text-sm">Library content goes here</div>
+            <div className="">
+              <Button className="bg-[#333333] hover:bg-[#333333]/70 rounded-full">Playlist</Button>
+              <Button className="bg-[#333333] hover:bg-[#333333]/70 rounded-full mx-2">Artistas</Button>
+              <Button className="bg-[#333333] hover:bg-[#333333]/70 rounded-full">Álbums</Button>
+            </div>
           </div>
 
           {/* Main Content */}
