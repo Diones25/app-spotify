@@ -106,86 +106,36 @@ const Home = () => {
                 <TabsContent value="playlist">
                   <ScrollArea className="h-[76vh] w-full rounded-md ">
                     {/* Lista de Playlists */}
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
+                    {userPlaylists?.items.map((playlist) => {
+                      // 1. Acessa o array de imagens da playlist.
+                      const images = playlist.images;
 
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
+                      // 2. Encontra o objeto de imagem onde 'height' é 60.
+                      // O 'find' retorna o primeiro objeto que satisfaz a condição.
+                      const image60 = images?.find(image => image.height === 60);
 
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
+                      // 3. Define a URL, priorizando a imagem de 60px.
+                      // Se a imagem de 60px não for encontrada, use a primeira imagem como fallback (ou uma imagem padrão).
+                      const imageUrl = image60?.url || images?.[0]?.url || ImageNotFound;
 
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer">
-                      <img src={ImageNotFound} className="w-14 h-14 rounded-md" />
-                      <div className="ml-3">
-                        <p className="text-md text-white">Emily Armstrong (linkin park)</p>
-                        <span className="text-sm text-[#AEAEAE]">silvia_hendrix</span>
-                      </div>
-                    </div>
-                    
+                      return (
+                        <div
+                          key={playlist.id} // É crucial usar uma 'key' única no elemento raiz do map
+                          className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer"
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={`Capa da playlist ${playlist.name}`}
+                            className="w-14 h-14 rounded-md"
+                          />
+                          <div className="ml-3">
+                            <p className="text-md text-white">{playlist.name}</p>
+                            <span className="text-sm text-[#AEAEAE]">{playlist.owner.display_name}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Fim - Lista de Playlists */}
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="artistas">
