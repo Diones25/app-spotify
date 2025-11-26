@@ -3,7 +3,7 @@ import { useContext, useState } from "react";
 import { TokenContext } from "../contexts/TokenContext";
 import LogoIcon from "../../public/logo_icon.png";
 import ImageNotFound from "../../public/image-not-found.jpg";
-import { useMe, useUserPlaylists } from "@/utils/queries";
+import { useMe, useUserArtists, useUserPlaylists } from "@/utils/queries";
 import { Search } from "lucide-react";
 import { Input } from "./ui/input";
 import {
@@ -30,6 +30,13 @@ const Home = () => {
     isError: isErrorPlaylists,
     error: errorPlaylists
   } = useUserPlaylists(tokenCtx?.accessToken || '', me?.id || '');
+
+  const {
+    data: userArtists,
+    isLoading: isLoadingArtists,
+    isError: isErrorArtists,
+    error: errorArtists
+  } = useUserArtists(tokenCtx?.accessToken || '');
 
   if (isLoading) {
     return <div className="text-white">Carregando informações do usuário...</div>;
@@ -139,7 +146,36 @@ const Home = () => {
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="artistas">
-                  <h2>Artistas</h2>
+                  {/* Lista de Artistas */}
+                  {userArtists?.artists.items.map((artists) => {
+                    // 1. Acessa o array de imagens da playlist.
+                    const images = artists.images;
+
+                    // 2. Encontra o objeto de imagem onde 'height' é 640.
+                    // O 'find' retorna o primeiro objeto que satisfaz a condição.
+                    const image640 = images?.find(image => image.height === 640);
+
+                    // 3. Define a URL, priorizando a imagem de 640px.
+                    // Se a imagem de 60px não for encontrada, use a primeira imagem como fallback (ou uma imagem padrão).
+                    const imageUrl = image640?.url || images?.[0]?.url || ImageNotFound;
+
+                    return (
+                      <div
+                        key={artists.id} // É crucial usar uma 'key' única no elemento raiz do map
+                        className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={`Capa da playlist ${artists.name}`}
+                          className="w-14 h-14 rounded-full"
+                        />
+                        <div className="ml-3">
+                          <p className="text-md text-white">{artists.name}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  { /* Fim - Lista de Artistas */}
                 </TabsContent>
                 <TabsContent value="albuns">
                   <h2>Álbuns</h2>

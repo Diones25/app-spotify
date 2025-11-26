@@ -71,6 +71,11 @@ export const requester = (config: any, contentType?: string): any => {
       return response.data;
     },
 
+    async getUserArtists() {
+      const response = await service.get(`https://api.spotify.com/v1/me/following?type=artist`);
+      return response.data;
+    },
+
     async get<T = any>(uri: string): Promise<AxiosResponse<T>> {
       const response = await service.get<T>(uri);
       return response;
