@@ -72,7 +72,12 @@ export const requester = (config: any, contentType?: string): any => {
     },
 
     async getUserArtists() {
-      const response = await service.get(`https://api.spotify.com/v1/me/following?type=artist`);
+      const response = await service.get(`/me/following?type=artist`);
+      return response.data;
+    },
+
+    async getUserAlbums() {
+      const response = await service.get(`/me/albums`);
       return response.data;
     },
 

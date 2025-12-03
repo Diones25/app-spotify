@@ -3,7 +3,7 @@ import { useContext, useState } from "react";
 import { TokenContext } from "../contexts/TokenContext";
 import LogoIcon from "../../public/logo_icon.png";
 import ImageNotFound from "../../public/image-not-found.jpg";
-import { useMe, useUserArtists, useUserPlaylists } from "@/utils/queries";
+import { useMe, useUserAlbums, useUserArtists, useUserPlaylists } from "@/utils/queries";
 import { Search } from "lucide-react";
 import { Input } from "./ui/input";
 import {
@@ -37,6 +37,13 @@ const Home = () => {
     isError: isErrorArtists,
     error: errorArtists
   } = useUserArtists(tokenCtx?.accessToken || '');
+
+  const {
+    data: userAlbums,
+    isLoading: isLoadingAlbums,
+    isError: isErrorAlbums,
+    error: errorAlbums
+  } = useUserAlbums(tokenCtx?.accessToken || '');
 
   if (isLoading) {
     return <div className="text-white">Carregando informações do usuário...</div>;
@@ -178,7 +185,37 @@ const Home = () => {
                   { /* Fim - Lista de Artistas */}
                 </TabsContent>
                 <TabsContent value="albuns">
-                  <h2>Álbuns</h2>
+                  {/* Lista de Playlists */}
+                  {userAlbums?.items.map((item) => {
+                    // 1. Acessa o array de imagens da album.
+                    const images = item.album.images;
+
+                    // 2. Encontra o objeto de imagem onde 'height' é 60.
+                    // O 'find' retorna o primeiro objeto que satisfaz a condição.
+                    const image60 = images?.find(image => image.height === 60);
+
+                    // 3. Define a URL, priorizando a imagem de 60px.
+                    // Se a imagem de 60px não for encontrada, use a primeira imagem como fallback (ou uma imagem padrão).
+                    const imageUrl = image60?.url || images?.[0]?.url || ImageNotFound;
+
+                    return (
+                      <div
+                        key={item.album.id} // É crucial usar uma 'key' única no elemento raiz do map
+                        className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={`Capa da album ${item.album.name}`}
+                          className="w-14 h-14 rounded-md"
+                        />
+                        <div className="ml-3">
+                          <p className="text-md text-white">{item.album.name}</p>
+                          <span className="text-sm text-[#AEAEAE]">{item.album.artists[0].name}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Fim - Lista de Playlists */}
                 </TabsContent>
               </Tabs>
             </div>
