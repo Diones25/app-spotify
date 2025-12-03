@@ -153,22 +153,16 @@ const Home = () => {
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="artistas">
-                  {/* Lista de Artistas */}
                   {userArtists?.artists.items.map((artists) => {
-                    // 1. Acessa o array de imagens da playlist.
                     const images = artists.images;
 
-                    // 2. Encontra o objeto de imagem onde 'height' é 640.
-                    // O 'find' retorna o primeiro objeto que satisfaz a condição.
                     const image640 = images?.find(image => image.height === 640);
 
-                    // 3. Define a URL, priorizando a imagem de 640px.
-                    // Se a imagem de 60px não for encontrada, use a primeira imagem como fallback (ou uma imagem padrão).
                     const imageUrl = image640?.url || images?.[0]?.url || ImageNotFound;
 
                     return (
                       <div
-                        key={artists.id} // É crucial usar uma 'key' única no elemento raiz do map
+                        key={artists.id} 
                         className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer"
                       >
                         <img
@@ -182,25 +176,18 @@ const Home = () => {
                       </div>
                     );
                   })}
-                  { /* Fim - Lista de Artistas */}
                 </TabsContent>
                 <TabsContent value="albuns">
-                  {/* Lista de Playlists */}
                   {userAlbums?.items.map((item) => {
-                    // 1. Acessa o array de imagens da album.
                     const images = item.album.images;
 
-                    // 2. Encontra o objeto de imagem onde 'height' é 60.
-                    // O 'find' retorna o primeiro objeto que satisfaz a condição.
                     const image60 = images?.find(image => image.height === 60);
 
-                    // 3. Define a URL, priorizando a imagem de 60px.
-                    // Se a imagem de 60px não for encontrada, use a primeira imagem como fallback (ou uma imagem padrão).
                     const imageUrl = image60?.url || images?.[0]?.url || ImageNotFound;
 
                     return (
                       <div
-                        key={item.album.id} // É crucial usar uma 'key' única no elemento raiz do map
+                        key={item.album.id} 
                         className="flex items-center hover:bg-[#1F1F1F] rounded-md p-2 mb-2 cursor-pointer"
                       >
                         <img
@@ -215,7 +202,6 @@ const Home = () => {
                       </div>
                     );
                   })}
-                  {/* Fim - Lista de Playlists */}
                 </TabsContent>
               </Tabs>
             </div>
