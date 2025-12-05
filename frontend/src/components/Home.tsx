@@ -2,6 +2,7 @@
 import { useContext, useState } from "react";
 import { TokenContext } from "../contexts/TokenContext";
 import LogoIcon from "../../public/logo_icon.png";
+import HomeIcon from "../../public/home.png";
 import ImageNotFound from "../../public/image-not-found.jpg";
 import { useMe, useUserAlbums, useUserArtists, useUserPlaylists } from "@/utils/queries";
 import { Search } from "lucide-react";
@@ -64,8 +65,8 @@ const Home = () => {
         </div>
 
         <div className="flex items-center">
-          <div>
-            <img src={LogoIcon} alt="" className="w-12" />
+          <div className="bg-[#1b1b1b] hover:bg-[#282828] cursor-pointer w-12 h-12 rounded-full flex items-center justify-center mr-2">
+            <img src={HomeIcon} alt="" className="w-5" />
           </div>
 
           <div className="relative w-full max-w-sm">
