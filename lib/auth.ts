@@ -17,6 +17,8 @@ export const auth = betterAuth({
                 "https://www.googleapis.com/auth/userinfo.profile",
                 "https://www.googleapis.com/auth/userinfo.email"
             ],
+            accessType: "offline",
+            prompt: "consent",
             mapProfileToUser: (profile) => {
                 return {
                     name: profile.name,
