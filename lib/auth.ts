@@ -7,6 +7,7 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "sqlite",
     }),
+    trustedOrigins: ["http://localhost:3000"],
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -15,7 +16,14 @@ export const auth = betterAuth({
                 "https://www.googleapis.com/auth/youtube.readonly",
                 "https://www.googleapis.com/auth/userinfo.profile",
                 "https://www.googleapis.com/auth/userinfo.email"
-            ]
+            ],
+            mapProfileToUser: (profile) => {
+                return {
+                    name: profile.name,
+                    email: profile.email,
+                    image: profile.picture,
+                }
+            }
         }
     },
     plugins: [

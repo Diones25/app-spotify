@@ -15,6 +15,7 @@ export function LoginGoogle() {
     await authClient.signIn.social({
       provider: "google",
       callbackURL: "/me",
+      disableRedirect: false,
     });
   }
 
