@@ -9,15 +9,26 @@ export default function Page() {
 
   useEffect(() => {
     async function getToken() {
-      const token = await authClient.getSocialToken({
-        provider: "google",
-      });
-      if (token) {
-        setYoutubeToken(token.data?.accessToken || null);
+      try {
+        // Busca o token de acesso para o provedor google
+        const { data, error } = await authClient.getAccessToken({
+          providerId: "google",
+        });
+        
+        if (data) {
+          setYoutubeToken(data.accessToken);
+        } else if (error) {
+          console.error("Erro ao buscar token:", error);
+        }
+      } catch (err) {
+        console.error("Erro inesperado:", err);
       }
     }
-    getToken();
-  }, []);
+    
+    if (session) {
+      getToken();
+    }
+  }, [session]);
 
   return (
     <div className="p-8">
@@ -27,10 +38,17 @@ export default function Page() {
         {youtubeToken ? (
           <div className="break-all">
             <p className="text-sm font-mono text-green-600">Token encontrado!</p>
-            <p className="mt-2 text-xs text-muted-foreground">Token: {youtubeToken.substring(0, 20)}...</p>
+            <p className="mt-2 text-xs text-muted-foreground">Token: {youtubeToken.substring(0, 30)}...</p>
+            <p className="mt-4 text-sm">
+              Agora você pode usar este token no cabeçalho <code>Authorization: Bearer {youtubeToken.substring(0, 10)}...</code> para chamar a YouTube Data API.
+            </p>
           </div>
         ) : (
-          <p className="text-sm text-red-500">Token não encontrado ou carregando...</p>
+          <p className="text-sm text-yellow-600">
+            {session 
+              ? "Buscando token ou você precisa fazer logout e login novamente para salvar o token no banco de dados..." 
+              : "Por favor, faça login para ver seu token."}
+          </p>
         )}
       </div>
     </div>
