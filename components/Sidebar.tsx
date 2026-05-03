@@ -9,23 +9,10 @@ interface SidebarProps {
 export function Sidebar({ className, playlists = [] }: SidebarProps) {
   return (
     <div className={cn("flex flex-col h-full bg-black text-[#b3b3b3] p-2 gap-2", className)}>
-      {/* Navegação Principal */}
-      <div className="bg-[#121212] rounded-lg p-4 flex flex-col gap-4">
-        <button className="flex items-center gap-4 text-white hover:text-white transition-colors font-bold">
-          <Home size={24} />
-          <span>Início</span>
-        </button>
-        <button className="flex items-center gap-4 hover:text-white transition-colors font-bold">
-          <Search size={24} />
-          <span>Buscar</span>
-        </button>
-      </div>
-
       {/* Biblioteca */}
       <div className="bg-[#121212] rounded-lg flex-1 flex flex-col overflow-hidden">
         <div className="p-4 flex items-center justify-between shadow-md">
-          <button className="flex items-center gap-2 hover:text-white transition-colors font-bold">
-            <Library size={24} />
+          <button className="flex items-center gap-2 text-white transition-colors font-bold">
             <span>Sua Biblioteca</span>
           </button>
           <button className="p-1 hover:bg-[#1a1a1a] rounded-full transition-colors">
