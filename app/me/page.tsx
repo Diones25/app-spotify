@@ -19,8 +19,6 @@ export default function Page() {
         const { data } = await authClient.getAccessToken({
           providerId: "google",
         });
-
-        console.log("SESSION ==> ", session?.user.image);
         
         if (data?.accessToken) {
           setYoutubeToken(data.accessToken);
