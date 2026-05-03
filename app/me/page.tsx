@@ -19,6 +19,8 @@ export default function Page() {
         const { data } = await authClient.getAccessToken({
           providerId: "google",
         });
+
+        console.log("SESSION ==> ", session?.user.image);
         
         if (data?.accessToken) {
           setYoutubeToken(data.accessToken);
@@ -64,41 +66,20 @@ export default function Page() {
 
       {/* Conteúdo Principal */}
       <main className="flex-1 flex flex-col bg-gradient-to-b from-[#1e1e1e] to-[#121212] m-2 ml-0 rounded-lg overflow-hidden relative">
-        {/* Header Superior */}
-        <header className="flex items-center justify-between p-4 sticky top-0 z-10 bg-[#121212]/50 backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <button className="p-1 bg-black/40 rounded-full text-white/70 hover:text-white"><ChevronLeft size={24} /></button>
-            <button className="p-1 bg-black/40 rounded-full text-white/70 hover:text-white"><ChevronRight size={24} /></button>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <button className="bg-white text-black px-4 py-1 rounded-full text-sm font-bold hover:scale-105 transition-transform">Ver planos Premium</button>
-            <button className="p-2 bg-black/40 rounded-full text-white/70 hover:text-white hover:scale-105"><Bell size={20} /></button>
-            <button className="p-1 bg-black/40 rounded-full text-white/70 hover:text-white hover:scale-105 flex items-center gap-2 pr-2">
-              <div className="w-7 h-7 bg-[#282828] rounded-full overflow-hidden flex items-center justify-center">
-                {session.user?.image ? (
-                  <img src={session.user.image} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={16} />
-                )}
-              </div>
-            </button>
-          </div>
-        </header>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
           {/* Banner de Perfil Estilo Spotify */}
           <section className="flex items-end gap-6 mb-8">
             <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-full overflow-hidden flex-shrink-0 bg-[#282828]">
-              {session.user?.image ? (
-                <img src={session.user.image} alt={session.user.name} className="w-full h-full object-cover" />
+              {session?.user.image ? (
+                <img src={session?.user.image} alt={session.user.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center"><User size={80} className="text-[#b3b3b3]" /></div>
               )}
             </div>
             <div className="flex flex-col gap-2 pb-2">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">Perfil</span>
+              <span className="text-xs font-bold text-white tracking-wider">Perfil</span>
               <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter">{session.user?.name}</h1>
               <div className="flex items-center gap-2 text-white/90 text-sm mt-2">
                 <span className="font-bold">{playlists.length} playlists públicas</span>
