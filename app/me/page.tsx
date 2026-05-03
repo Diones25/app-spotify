@@ -10,6 +10,7 @@ export default function Page() {
   const { data: session } = authClient.useSession();
   const [youtubeToken, setYoutubeToken] = useState<string | null>(null);
   const [playlists, setPlaylists] = useState<any[]>([]);
+  const [allPlaylists, setAllPlaylists] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [allSubscriptions, setAllSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,13 @@ export default function Page() {
           });
           const plData = await plRes.json();
           setPlaylists(plData.items || []);
+
+          // Buscar Playlists
+          const plAllRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`, {
+            headers: { Authorization: `Bearer ${data.accessToken}` }
+          });
+          const plAllData = await plAllRes.json();
+          setAllPlaylists(plAllData.items || []);
 
           // Buscar Inscrições (Artistas)
           const subRes = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=10`, {
@@ -192,7 +200,7 @@ export default function Page() {
                 <h2 className="text-3xl font-bold text-white">Playlists públicas</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                {playlists.map((pl) => (
+                {allPlaylists.map((pl) => (
                   <SpotifyCard 
                     key={pl.id}
                     title={pl.snippet.title}
