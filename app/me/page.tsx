@@ -90,7 +90,7 @@ export default function Page() {
           {/* Seção de Playlists */}
           <section>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Suas Playlists</h2>
+              <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Playlists públicas</h2>
               <button className="text-[#b3b3b3] text-sm font-bold hover:underline">Mostrar tudo</button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -112,7 +112,7 @@ export default function Page() {
           {/* Seção de Artistas (Inscrições) */}
           <section>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Canais que você segue</h2>
+              <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Seguindo</h2>
               <button className="text-[#b3b3b3] text-sm font-bold hover:underline">Mostrar tudo</button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
