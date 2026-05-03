@@ -4,7 +4,7 @@ import { authClient } from "@/lib/auth-client";
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
-import { Bell, User, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { User } from "lucide-react";
 
 export default function Page() {
   const { data: session } = authClient.useSession();
