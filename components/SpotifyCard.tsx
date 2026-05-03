@@ -26,7 +26,7 @@ export function SpotifyCard({ title, subtitle, image, type = "playlist" }: CardP
         {/* Play Button Overlay */}
         <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition-all duration-300 translate-y-0">
           <button className="bg-[#1ed760] p-3 rounded-full shadow-xl hover:scale-105 active:scale-95 text-black">
-            <Play fill="black" size={24} />
+            <Play fill="black" size={24} className="cursor-pointer" />
           </button>
         </div>
       </div>
