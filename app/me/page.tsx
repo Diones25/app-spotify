@@ -11,6 +11,7 @@ export default function Page() {
   const [youtubeToken, setYoutubeToken] = useState<string | null>(null);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [allSubscriptions, setAllSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"home" | "artists" | "playlists">("home");
 
@@ -37,6 +38,13 @@ export default function Page() {
           });
           const subData = await subRes.json();
           setSubscriptions(subData.items || []);
+
+          // Buscar todas as Inscrições (Artistas)
+          const subAllRes = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`, {
+            headers: { Authorization: `Bearer ${data.accessToken}` }
+          });
+          const subAllData = await subAllRes.json();
+          setAllSubscriptions(subAllData.items || []);
         }
       } catch (err) {
         console.error("Erro ao buscar dados do YouTube:", err);
@@ -166,7 +174,7 @@ export default function Page() {
                 <h2 className="text-3xl font-bold text-white">Seguindo</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                {subscriptions.map((sub) => (
+                {allSubscriptions.map((sub) => (
                   <SpotifyCard 
                     key={sub.id}
                     title={sub.snippet.title}
