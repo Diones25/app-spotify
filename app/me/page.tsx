@@ -12,7 +12,7 @@ export default function Page() {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"home" | "artists">("home");
+  const [view, setView] = useState<"home" | "artists" | "playlists">("home");
 
   useEffect(() => {
     async function fetchYouTubeData() {
@@ -108,7 +108,12 @@ export default function Page() {
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Playlists públicas</h2>
-                  <button className="text-[#b3b3b3] text-sm font-bold hover:underline cursor-pointer">Mostrar tudo</button>
+                  <button 
+                    onClick={() => setView("playlists")}
+                    className="text-[#b3b3b3] text-sm font-bold hover:underline cursor-pointer"
+                  >
+                    Mostrar tudo
+                  </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                   {loading ? (
@@ -154,7 +159,7 @@ export default function Page() {
                 </div>
               </section>
             </>
-          ) : (
+          ) : view === "artists" ? (
             /* Visualização "Mostrar Tudo" de Artistas */
             <section>
               <div className="flex items-center justify-between mb-8">
@@ -168,6 +173,23 @@ export default function Page() {
                     subtitle="Artista"
                     type="artist"
                     image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : (
+            /* Visualização "Mostrar Tudo" de Playlists */
+            <section>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-3xl font-bold text-white">Playlists públicas</h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                {playlists.map((pl) => (
+                  <SpotifyCard 
+                    key={pl.id}
+                    title={pl.snippet.title}
+                    subtitle={`De ${pl.snippet.channelTitle}`}
+                    image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
                   />
                 ))}
               </div>
