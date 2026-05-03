@@ -60,16 +60,16 @@ export default function Page() {
   return (
     <div className="flex h-screen bg-black overflow-hidden font-sans">
       {/* Sidebar */}
-      <Sidebar className="w-[350px] hidden md:flex" playlists={playlists} />
+      <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 flex flex-col bg-gradient-to-b from-[#1e1e1e] to-[#121212] m-2 ml-0 rounded-lg overflow-hidden relative">
+      <main className="flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] m-2 ml-0 rounded-lg overflow-hidden relative">
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
           {/* Banner de Perfil Estilo Spotify */}
           <section className="flex items-end gap-6 mb-8">
-            <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-full overflow-hidden flex-shrink-0 bg-[#282828]">
+            <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-full overflow-hidden shrink-0 bg-[#282828]">
               {session?.user.image ? (
                 <img src={session?.user.image} alt={session.user.name} className="w-full h-full object-cover" />
               ) : (
