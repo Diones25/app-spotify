@@ -29,7 +29,7 @@ export function Sidebar({ className, playlists = [] }: SidebarProps) {
         {/* Lista de Itens */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           <button className="w-full flex items-center gap-3 p-2 hover:bg-[#1a1a1a] rounded-md transition-colors group text-left">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-700 to-blue-300 rounded flex items-center justify-center">
+            <div className="w-12 h-12 bg-linear-to-br from-indigo-700 to-blue-300 rounded flex items-center justify-center">
               <Heart size={24} className="text-white fill-white" />
             </div>
             <div className="flex flex-col overflow-hidden">
