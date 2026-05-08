@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Dispatch, SetStateAction } from "react";
 
 type Props = {
     setView: any;
