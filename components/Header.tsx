@@ -15,7 +15,7 @@ export default function Header({ setView }: Props) {
                     <ChevronLeft className="cursor-pointer" size={24} />
                 </button>
                 <button className="p-1 bg-black/40 rounded-full text-white/70 hover:text-white">
-                    <ChevronRight size={24} />
+                    <ChevronRight className="cursor-pointer" size={24} />
                 </button>
             </div>
         </header>
