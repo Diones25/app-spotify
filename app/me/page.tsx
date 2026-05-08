@@ -19,7 +19,7 @@ export default function Page() {
   useEffect(() => {
     async function fetchYouTubeData() {
       try {
-        const { data } = await authClient.getAccessToken({
+        const { data, error } = await authClient.getAccessToken({
           providerId: "google",
         });
         
@@ -30,6 +30,11 @@ export default function Page() {
           const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=10`, {
             headers: { Authorization: `Bearer ${data.accessToken}` }
           });
+
+          if (plRes.status === 401 || plRes.status === 403) {
+             throw new Error("Token expirado ou inválido");
+          }
+
           const plData = await plRes.json();
           setPlaylists(plData.items || []);
 
@@ -53,6 +58,9 @@ export default function Page() {
           });
           const subAllData = await subAllRes.json();
           setAllSubscriptions(subAllData.items || []);
+        } else if (error) {
+          console.error("Erro ao recuperar access token:", error);
+          // Opcional: authClient.signOut();
         }
       } catch (err) {
         console.error("Erro ao buscar dados do YouTube:", err);
@@ -62,6 +70,7 @@ export default function Page() {
     }
     
     if (session) {
+      document.title = `Spotify – ${session.user.name}`;
       fetchYouTubeData();
     }
   }, [session]);
