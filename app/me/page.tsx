@@ -4,7 +4,7 @@ import { authClient } from "@/lib/auth-client";
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
-import { User, ChevronLeft, ChevronRight } from "lucide-react";
+import { User } from "lucide-react";
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
 
