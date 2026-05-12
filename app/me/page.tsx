@@ -88,7 +88,7 @@ export default function Page() {
   return (
     <>
       <HeaderSearch />
-      <div className="flex h-screen bg-black overflow-hidden font-sans">
+      <div className="flex h-screen bg-black overflow-hidden font-sans pr-2">
         {/* Sidebar */}
         <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
 
