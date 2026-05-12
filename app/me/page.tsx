@@ -7,6 +7,7 @@ import { SpotifyCard } from "@/components/SpotifyCard";
 import { User } from "lucide-react";
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
+import PlayerMusic from "@/components/PlayerMusic";
 
 export default function Page() {
   const { data: session } = authClient.useSession();
@@ -215,6 +216,8 @@ export default function Page() {
           </div>
         </main>
       </div>
+
+      <PlayerMusic />
     </>
   );
 }
