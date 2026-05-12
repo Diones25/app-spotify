@@ -29,7 +29,7 @@ export default function HeaderSearch() {
 
           {/* Separador e Ícone da Direita (Pasta/Maleta) */}
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
-            <div className="w-[1px] h-6 bg-[#333]" />
+            <div className="w-px h-6 bg-[#333]" />
             <button className="text-[#b3b3b3] hover:text-white transition-colors">
               <Briefcase size={24} />
             </button>
