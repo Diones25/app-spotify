@@ -21,6 +21,20 @@ export default function Page() {
   const [selectedPlaylist, setSelectedPlaylist] = useState<any>(null);
   const [playlistTracks, setPlaylistTracks] = useState<any[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
+  const [randomColor, setRandomColor] = useState("from-red-600");
+
+  const spotifyColors = [
+    "from-red-600",
+    "from-blue-600",
+    "from-green-600",
+    "from-purple-600",
+    "from-orange-600",
+    "from-pink-600",
+    "from-indigo-600",
+    "from-yellow-600",
+    "from-teal-600",
+    "from-emerald-600",
+  ];
 
   useEffect(() => {
     async function fetchYouTubeData() {
@@ -85,6 +99,10 @@ export default function Page() {
     setSelectedPlaylist(playlist);
     setView("playlist-detail");
     setLoadingTracks(true);
+    
+    // Escolher uma cor aleatória
+    const color = spotifyColors[Math.floor(Math.random() * spotifyColors.length)];
+    setRandomColor(color);
     
     try {
       const { data } = await authClient.getAccessToken({
@@ -206,11 +224,11 @@ export default function Page() {
                 </section>
               </>
             ) : view === "playlist-detail" && selectedPlaylist ? (
-              /* Visualização Detalhada da Playlist */
-              <div className="-m-6">
-                {/* Header da Playlist com Gradiente */}
-                <div className="bg-gradient-to-b from-red-600 to-[#121212] p-6 pt-12 flex flex-col md:flex-row items-end gap-6">
-                  <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-md overflow-hidden shrink-0">
+            /* Visualização Detalhada da Playlist */
+            <div className="-m-6">
+              {/* Header da Playlist com Gradiente Dinâmico */}
+              <div className={`bg-linear-to-b ${randomColor} to-[#121212] p-6 pt-12 flex flex-col md:flex-row items-end gap-6`}>
+                <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-md overflow-hidden shrink-0">
                     <img 
                       src={selectedPlaylist.snippet.thumbnails?.high?.url || selectedPlaylist.snippet.thumbnails?.medium?.url} 
                       alt={selectedPlaylist.snippet.title} 
