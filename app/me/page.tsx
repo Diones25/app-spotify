@@ -17,9 +17,11 @@ export default function Page() {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [allSubscriptions, setAllSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"home" | "artists" | "playlists" | "playlist-detail">("home");
+  const [view, setView] = useState<"home" | "artists" | "playlists" | "playlist-detail" | "artist-detail">("home");
   const [selectedPlaylist, setSelectedPlaylist] = useState<any>(null);
+  const [selectedArtist, setSelectedArtist] = useState<any>(null);
   const [playlistTracks, setPlaylistTracks] = useState<any[]>([]);
+  const [artistVideos, setArtistVideos] = useState<any[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
   const [randomColor, setRandomColor] = useState("from-red-600");
 
@@ -123,6 +125,36 @@ export default function Page() {
     }
   };
 
+  const openArtistDetail = async (artist: any) => {
+    setSelectedArtist(artist);
+    setView("artist-detail");
+    setLoadingTracks(true);
+    
+    // Escolher uma cor aleatória
+    const color = spotifyColors[Math.floor(Math.random() * spotifyColors.length)];
+    setRandomColor(color);
+    
+    try {
+      const { data } = await authClient.getAccessToken({
+        providerId: "google",
+      });
+      
+      if (data?.accessToken) {
+        // Buscar vídeos do canal (simulando "músicas populares")
+        const channelId = artist.snippet.resourceId.channelId;
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=viewCount&type=video`, {
+          headers: { Authorization: `Bearer ${data.accessToken}` }
+        });
+        const videoData = await res.json();
+        setArtistVideos(videoData.items || []);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar vídeos do artista:", err);
+    } finally {
+      setLoadingTracks(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-white">
@@ -207,20 +239,21 @@ export default function Page() {
                     </button>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                    {loading ? (
-                      Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
-                    ) : (
-                      subscriptions.map((sub) => (
-                        <SpotifyCard 
-                          key={sub.id}
-                          title={sub.snippet.title}
-                          subtitle="Canal"
-                          type="artist"
-                          image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
-                        />
-                      ))
-                    )}
-                  </div>
+                  {loading ? (
+                    Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
+                  ) : (
+                    subscriptions.map((sub) => (
+                      <SpotifyCard 
+                        key={sub.id}
+                        title={sub.snippet.title}
+                        subtitle="Canal"
+                        type="artist"
+                        image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
+                        onClick={() => openArtistDetail(sub)}
+                      />
+                    ))
+                  )}
+                </div>
                 </section>
               </>
             ) : view === "playlist-detail" && selectedPlaylist ? (
@@ -314,7 +347,62 @@ export default function Page() {
                   </div>
                 </div>
               </div>
-            ) : view === "artists" ? (
+          ) : view === "artist-detail" && selectedArtist ? (
+            /* Visualização Detalhada do Artista */
+            <div className="-m-6">
+              {/* Header do Artista com Gradiente e Imagem de Fundo */}
+              <div className={`relative h-[40vh] min-h-85 flex items-end p-6 bg-linear-to-b ${randomColor} to-[#121212]/80`}>
+                <div className="flex flex-col gap-4 z-10">
+                  <div className="flex items-center gap-2 text-white">
+                    <div className="bg-blue-500 rounded-full p-1"><Settings size={12} className="text-white fill-white" /></div>
+                    <span className="text-sm font-bold">Artista verificado</span>
+                  </div>
+                  <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter">{selectedArtist.snippet.title}</h1>
+                  <span className="text-white font-medium">854.321 ouvintes mensais</span>
+                </div>
+              </div>
+
+              {/* Controles e Lista de Músicas Populares */}
+              <div className="bg-[#121212] p-6 space-y-8">
+                <div className="flex items-center gap-8">
+                  <button className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg">
+                    <Play fill="black" size={28} />
+                  </button>
+                  <button className="border border-[#878787] text-white px-4 py-1 rounded-full text-sm font-bold hover:border-white transition-colors">Seguindo</button>
+                  <button className="text-[#b3b3b3] hover:text-white transition-colors"><MoreHorizontal size={28} /></button>
+                </div>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-white mb-4">Populares</h2>
+                  <div className="space-y-1">
+                    {loadingTracks ? (
+                      Array(5).fill(0).map((_, i) => (
+                        <div key={i} className="h-14 bg-[#181818] rounded-md animate-pulse" />
+                      ))
+                    ) : (
+                      artistVideos.map((video, i) => (
+                        <div key={video.id.videoId} className="flex items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors">
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <span className="text-[#b3b3b3] w-4 text-center group-hover:text-white">{i + 1}</span>
+                            <img src={video.snippet.thumbnails.default.url} alt="" className="w-10 h-10 rounded object-cover" />
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-white font-medium truncate group-hover:text-[#1ed760] cursor-pointer">{video.snippet.title}</span>
+                              <span className="text-[#b3b3b3] text-xs">Videoclipe</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-8">
+                            <span className="text-[#b3b3b3] text-sm hidden md:block">1.234.567</span>
+                            <span className="text-[#b3b3b3] text-sm mr-4">3:24</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <button className="text-[#b3b3b3] text-sm font-bold hover:text-white mt-4 uppercase tracking-wider">Ver mais</button>
+                </section>
+              </div>
+            </div>
+          ) : view === "artists" ? (
               /* Visualização "Mostrar Tudo" de Artistas */
               <section>
                 <div className="flex items-center justify-between mb-8">
