@@ -5,11 +5,15 @@ interface CardProps {
   subtitle: string;
   image?: string;
   type?: "artist" | "playlist";
+  onClick?: () => void;
 }
 
-export function SpotifyCard({ title, subtitle, image, type = "playlist" }: CardProps) {
+export function SpotifyCard({ title, subtitle, image, type = "playlist", onClick }: CardProps) {
   return (
-    <div className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group cursor-pointer relative">
+    <div 
+      onClick={onClick}
+      className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all duration-300 group cursor-pointer relative"
+    >
       <div className="relative mb-4 aspect-square">
         {image ? (
           <img 
