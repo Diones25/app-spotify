@@ -578,17 +578,22 @@ export default function Page() {
       </div>
 
       {currentTrack && (
-        <div className="hidden">
+        <div className="fixed -bottom-250 -left-250 opacity-0 pointer-events-none">
           <ReactPlayer
             ref={playerRef}
             url={currentTrack.url}
             playing={isPlaying}
             onProgress={(state: any) => setPlayed(state.played)}
-            onDuration={(d: number) => setDuration(d)}
+            onReady={(player: any) => setDuration(player.getDuration())}
             onEnded={handleNext}
             config={{
               youtube: {
-                playerVars: { autoplay: 1 }
+                playerVars: { 
+                  autoplay: 1,
+                  controls: 0,
+                  showinfo: 0,
+                  rel: 0
+                }
               }
             } as any}
           />
