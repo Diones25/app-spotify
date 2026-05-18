@@ -1,21 +1,130 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlay, faPause, faStepForward, faStepBackward } from '@fortawesome/free-solid-svg-icons'
+import { faPlay, faPause, faStepForward, faStepBackward, faVolumeHigh, faShuffle, faRepeat } from '@fortawesome/free-solid-svg-icons'
 
-export default function PlayerMusic() {
+interface PlayerMusicProps {
+  currentTrack: {
+    title: string;
+    artist: string;
+    image: string;
+  } | null;
+  isPlaying: boolean;
+  onTogglePlay: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+  progress: number;
+  duration: number;
+  onSeek: (value: number) => void;
+}
+
+export default function PlayerMusic({
+  currentTrack,
+  isPlaying,
+  onTogglePlay,
+  onNext,
+  onPrevious,
+  progress,
+  duration,
+  onSeek
+}: PlayerMusicProps) {
+  
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="bg-black">
-      <div className='flex flex-col items-center pb-4'>
-        <div className="flex items-center justify-center my-4">
-          <FontAwesomeIcon icon={faStepBackward} className="text-[#4d4d4d] text-lg mr-5" />
-          {/* <div className="bg-[#4d4d4d] w-9 h-9 flex items-center justify-center rounded-full">
-          <FontAwesomeIcon icon={faPlay} />
-        </div> */}
-          <div className="bg-[#4d4d4d] w-9 h-9 flex items-center justify-center rounded-full">
-            <FontAwesomeIcon icon={faPause} />
+    <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-white/5 px-4 h-24 flex items-center justify-between z-50">
+      {/* Informações da Música */}
+      <div className="flex items-center gap-4 w-[30%]">
+        {currentTrack ? (
+          <>
+            <img src={currentTrack.image} alt="" className="w-14 h-14 rounded shadow-lg" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-white text-sm font-medium truncate hover:underline cursor-pointer">
+                {currentTrack.title}
+              </span>
+              <span className="text-[#b3b3b3] text-xs truncate hover:underline cursor-pointer">
+                {currentTrack.artist}
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-[#282828] rounded shadow-lg" />
+            <div className="flex flex-col gap-2">
+              <div className="w-24 h-3 bg-[#282828] rounded" />
+              <div className="w-16 h-2 bg-[#282828] rounded" />
+            </div>
           </div>
-          <FontAwesomeIcon icon={faStepForward} className="text-[#4d4d4d] text-lg ml-5" />
+        )}
+      </div>
+
+      {/* Controles de Reprodução */}
+      <div className="flex flex-col items-center max-w-[40%] w-full gap-2">
+        <div className="flex items-center gap-6">
+          <button className="text-[#b3b3b3] hover:text-white transition-colors">
+            <FontAwesomeIcon icon={faShuffle} className="text-sm" />
+          </button>
+          <button 
+            onClick={onPrevious}
+            className="text-[#b3b3b3] hover:text-white transition-colors"
+          >
+            <FontAwesomeIcon icon={faStepBackward} className="text-xl" />
+          </button>
+          <button 
+            onClick={onTogglePlay}
+            className="bg-white w-8 h-8 flex items-center justify-center rounded-full hover:scale-105 transition-transform"
+          >
+            <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} className="text-black text-sm" />
+          </button>
+          <button 
+            onClick={onNext}
+            className="text-[#b3b3b3] hover:text-white transition-colors"
+          >
+            <FontAwesomeIcon icon={faStepForward} className="text-xl" />
+          </button>
+          <button className="text-[#b3b3b3] hover:text-white transition-colors">
+            <FontAwesomeIcon icon={faRepeat} className="text-sm" />
+          </button>
         </div>
-        <div className='w-151 h-1 bg-[#4d4d4d] rounded'></div>
+
+        {/* Barra de Progresso */}
+        <div className="flex items-center gap-2 w-full max-w-md">
+          <span className="text-[#b3b3b3] text-[10px] min-w-7.5 text-right">
+            {formatTime(progress * duration)}
+          </span>
+          <div className="relative flex-1 h-1 group cursor-pointer">
+            <input 
+              type="range"
+              min={0}
+              max={0.999999}
+              step="any"
+              value={progress}
+              onChange={(e) => onSeek(parseFloat(e.target.value))}
+              className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+            />
+            <div className="absolute inset-0 bg-[#4d4d4d] rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white group-hover:bg-[#1ed760] transition-colors" 
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+          </div>
+          <span className="text-[#b3b3b3] text-[10px] min-w-7.5`">
+            {formatTime(duration)}
+          </span>
+        </div>
+      </div>
+
+      {/* Outros Controles (Volume, etc) */}
+      <div className="flex items-center justify-end gap-3 w-[30%]">
+        <button className="text-[#b3b3b3] hover:text-white transition-colors">
+          <FontAwesomeIcon icon={faVolumeHigh} className="text-sm" />
+        </button>
+        <div className="w-24 h-1 bg-[#4d4d4d] rounded-full group cursor-pointer relative">
+           <div className="absolute inset-0 bg-white group-hover:bg-[#1ed760] w-1/2 rounded-full" />
+        </div>
       </div>
     </div>
   );

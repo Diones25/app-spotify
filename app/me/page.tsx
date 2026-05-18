@@ -1,13 +1,24 @@
 "use client"
 
 import { authClient } from "@/lib/auth-client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
-import { Bell, User, ChevronLeft, ChevronRight, Settings, Clock, Play, MoreHorizontal, Download, UserPlus } from "lucide-react";
+import { Bell, User, ChevronLeft, ChevronRight, Settings, Clock, Play, MoreHorizontal, Download, UserPlus, Pause } from "lucide-react";
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
 import PlayerMusic from "@/components/PlayerMusic";
+import dynamic from 'next/dynamic';
+
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
+
+interface Track {
+  id: string;
+  title: string;
+  artist: string;
+  image: string;
+  url: string;
+}
 
 export default function Page() {
   const { data: session } = authClient.useSession();
@@ -24,6 +35,71 @@ export default function Page() {
   const [artistVideos, setArtistVideos] = useState<any[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
   const [randomColor, setRandomColor] = useState("from-red-600");
+
+  // Estados de Reprodução
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [queue, setQueue] = useState<Track[]>([]);
+  const [queueIndex, setQueueIndex] = useState(0);
+  const [played, setPlayed] = useState(0); // 0 a 1
+  const [duration, setDuration] = useState(0); // em segundos
+  const playerRef = useRef<any>(null);
+
+  const formatTrack = (item: any): Track => {
+    // Para Playlist Items
+    if (item.kind === 'youtube#playlistItem' || item.contentDetails?.videoId) {
+      return {
+        id: item.contentDetails.videoId,
+        title: item.snippet.title,
+        artist: item.snippet.videoOwnerChannelTitle || item.snippet.channelTitle,
+        image: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+        url: `https://www.youtube.com/watch?v=${item.contentDetails.videoId}`
+      };
+    }
+    // Para Search Results (Artistas)
+    return {
+      id: item.id.videoId || item.id,
+      title: item.snippet.title,
+      artist: item.snippet.channelTitle,
+      image: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+      url: `https://www.youtube.com/watch?v=${item.id.videoId || item.id}`
+    };
+  };
+
+  const playTrack = (track: Track, newQueue: Track[]) => {
+    setQueue(newQueue);
+    const index = newQueue.findIndex(t => t.id === track.id);
+    setQueueIndex(index !== -1 ? index : 0);
+    setCurrentTrack(track);
+    setIsPlaying(true);
+  };
+
+  const handleNext = () => {
+    if (queueIndex < queue.length - 1) {
+      const nextIndex = queueIndex + 1;
+      setQueueIndex(nextIndex);
+      setCurrentTrack(queue[nextIndex]);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (queueIndex > 0) {
+      const prevIndex = queueIndex - 1;
+      setQueueIndex(prevIndex);
+      setCurrentTrack(queue[prevIndex]);
+    }
+  };
+
+  const togglePlay = () => {
+    if (currentTrack) {
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleSeek = (amount: number) => {
+    setPlayed(amount);
+    playerRef.current?.seekTo(amount);
+  };
 
   const spotifyColors = [
     "from-red-600",
@@ -285,8 +361,20 @@ export default function Page() {
                 {/* Controles e Lista de Músicas */}
                 <div className="bg-[#121212]/30 backdrop-blur-sm p-6 space-y-6 min-h-screen">
                   <div className="flex items-center gap-8">
-                    <button className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg">
-                      <Play fill="black" size={28} />
+                    <button 
+                      onClick={() => {
+                        if (playlistTracks.length > 0) {
+                          const tracks = playlistTracks.map(formatTrack);
+                          playTrack(tracks[0], tracks);
+                        }
+                      }}
+                      className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
+                    >
+                      {currentTrack && isPlaying && queue.some(t => playlistTracks.some(pt => pt.contentDetails.videoId === t.id)) ? (
+                        <Pause fill="black" size={28} />
+                      ) : (
+                        <Play fill="black" size={28} />
+                      )}
                     </button>
                     <button className="text-[#b3b3b3] hover:text-white transition-colors"><Download size={28} /></button>
                     <button className="text-[#b3b3b3] hover:text-white transition-colors"><UserPlus size={28} /></button>
@@ -309,40 +397,55 @@ export default function Page() {
                         <div key={i} className="h-14 bg-[#181818] rounded-md animate-pulse mx-2" />
                       ))
                     ) : (
-                      playlistTracks.map((track, i) => (
-                        <div key={track.id} className="grid grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center">
-                          <span className="text-[#b3b3b3] group-hover:text-white text-sm">{i + 1}</span>
-                          <div className="flex items-center gap-3">
-                            <img 
-                              src={track.snippet.thumbnails?.default?.url} 
-                              alt="" 
-                              className="w-10 h-10 rounded object-cover" 
-                            />
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-white font-medium truncate group-hover:text-[#1ed760] cursor-pointer">
-                                {track.snippet.title}
-                              </span>
-                              <span className="text-[#b3b3b3] text-xs truncate">
-                                {track.snippet.videoOwnerChannelTitle || track.snippet.channelTitle}
-                              </span>
+                      playlistTracks.map((item, i) => {
+                        const track = formatTrack(item);
+                        const isCurrent = currentTrack?.id === track.id;
+                        return (
+                          <div 
+                            key={item.id} 
+                            onClick={() => playTrack(track, playlistTracks.map(formatTrack))}
+                            className="grid grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center cursor-pointer"
+                          >
+                            <span className={`text-[#b3b3b3] group-hover:text-white text-sm ${isCurrent ? 'text-[#1ed760]' : ''}`}>
+                              {isCurrent && isPlaying ? (
+                                <div className="flex items-end gap-0.5 h-3">
+                                  <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.6s' }} />
+                                  <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.8s' }} />
+                                  <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.5s' }} />
+                                </div>
+                              ) : i + 1}
+                            </span>
+                            <div className="flex items-center gap-3">
+                              <img 
+                                src={track.image} 
+                                alt="" 
+                                className="w-10 h-10 rounded object-cover" 
+                              />
+                              <div className="flex flex-col min-w-0">
+                                <span className={`font-medium truncate group-hover:text-white ${isCurrent ? 'text-[#1ed760]' : 'text-white'}`}>
+                                  {track.title}
+                                </span>
+                                <span className="text-[#b3b3b3] text-xs truncate">
+                                  {track.artist}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[#b3b3b3] text-sm truncate hidden md:block">
+                              {selectedPlaylist.snippet.title}
+                            </span>
+                            <span className="text-[#b3b3b3] text-sm truncate hidden lg:block">
+                              {new Date(item.snippet.publishedAt).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
+                            <div className="flex justify-end text-[#b3b3b3] text-sm">
+                              3:45
                             </div>
                           </div>
-                          <span className="text-[#b3b3b3] text-sm truncate hidden md:block">
-                            {selectedPlaylist.snippet.title}
-                          </span>
-                          <span className="text-[#b3b3b3] text-sm truncate hidden lg:block">
-                            {new Date(track.snippet.publishedAt).toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            })}
-                          </span>
-                          <div className="flex justify-end text-[#b3b3b3] text-sm">
-                            {/* Duração fixa ou placeholder se a API não fornecer no snippet básico */}
-                            3:45
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -365,8 +468,20 @@ export default function Page() {
               {/* Controles e Lista de Músicas Populares */}
               <div className="bg-[#121212] p-6 space-y-8">
                 <div className="flex items-center gap-8">
-                  <button className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg">
-                    <Play fill="black" size={28} />
+                  <button 
+                    onClick={() => {
+                      if (artistVideos.length > 0) {
+                        const tracks = artistVideos.map(formatTrack);
+                        playTrack(tracks[0], tracks);
+                      }
+                    }}
+                    className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
+                  >
+                    {currentTrack && isPlaying && queue.some(t => artistVideos.some(av => (av.id.videoId || av.id) === t.id)) ? (
+                      <Pause fill="black" size={28} />
+                    ) : (
+                      <Play fill="black" size={28} />
+                    )}
                   </button>
                   <button className="border border-[#878787] text-white px-4 py-1 rounded-full text-sm font-bold hover:border-white transition-colors">Seguindo</button>
                   <button className="text-[#b3b3b3] hover:text-white transition-colors"><MoreHorizontal size={28} /></button>
@@ -380,22 +495,40 @@ export default function Page() {
                         <div key={i} className="h-14 bg-[#181818] rounded-md animate-pulse" />
                       ))
                     ) : (
-                      artistVideos.map((video, i) => (
-                        <div key={video.id.videoId} className="flex items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors">
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <span className="text-[#b3b3b3] w-4 text-center group-hover:text-white">{i + 1}</span>
-                            <img src={video.snippet.thumbnails.default.url} alt="" className="w-10 h-10 rounded object-cover" />
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-white font-medium truncate group-hover:text-[#1ed760] cursor-pointer">{video.snippet.title}</span>
-                              <span className="text-[#b3b3b3] text-xs">Videoclipe</span>
+                      artistVideos.map((item, i) => {
+                        const track = formatTrack(item);
+                        const isCurrent = currentTrack?.id === track.id;
+                        return (
+                          <div 
+                            key={track.id} 
+                            onClick={() => playTrack(track, artistVideos.map(formatTrack))}
+                            className="flex items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                              <span className={`w-4 text-center text-sm ${isCurrent ? 'text-[#1ed760]' : 'text-[#b3b3b3] group-hover:text-white'}`}>
+                                {isCurrent && isPlaying ? (
+                                  <div className="flex items-end gap-0.5 h-3 justify-center">
+                                    <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.6s' }} />
+                                    <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.8s' }} />
+                                    <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.5s' }} />
+                                  </div>
+                                ) : i + 1}
+                              </span>
+                              <img src={track.image} alt="" className="w-10 h-10 rounded object-cover" />
+                              <div className="flex flex-col min-w-0">
+                                <span className={`font-medium truncate group-hover:text-white ${isCurrent ? 'text-[#1ed760]' : 'text-white'}`}>
+                                  {track.title}
+                                </span>
+                                <span className="text-[#b3b3b3] text-xs">Videoclipe</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-8">
+                              <span className="text-[#b3b3b3] text-sm hidden md:block">1.234.567</span>
+                              <span className="text-[#b3b3b3] text-sm mr-4">3:24</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-8">
-                            <span className="text-[#b3b3b3] text-sm hidden md:block">1.234.567</span>
-                            <span className="text-[#b3b3b3] text-sm mr-4">3:24</span>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                   <button className="text-[#b3b3b3] text-sm font-bold hover:text-white mt-4 uppercase tracking-wider">Ver mais</button>
@@ -416,6 +549,7 @@ export default function Page() {
                       subtitle="Artista"
                       type="artist"
                       image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
+                      onClick={() => openArtistDetail(sub)}
                     />
                   ))}
                 </div>
@@ -433,6 +567,7 @@ export default function Page() {
                       title={pl.snippet.title}
                       subtitle={`De ${pl.snippet.channelTitle}`}
                       image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
+                      onClick={() => openPlaylistDetail(pl)}
                     />
                   ))}
                 </div>
@@ -442,7 +577,34 @@ export default function Page() {
         </main>
       </div>
 
-      <PlayerMusic />
+      {currentTrack && (
+        <div className="hidden">
+          <ReactPlayer
+            ref={playerRef}
+            url={currentTrack.url}
+            playing={isPlaying}
+            onProgress={(state: any) => setPlayed(state.played)}
+            onDuration={(d: number) => setDuration(d)}
+            onEnded={handleNext}
+            config={{
+              youtube: {
+                playerVars: { autoplay: 1 }
+              }
+            } as any}
+          />
+        </div>
+      )}
+
+      <PlayerMusic 
+        currentTrack={currentTrack}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        progress={played}
+        duration={duration}
+        onSeek={handleSeek}
+      />
     </>
   );
 }
