@@ -1,5 +1,6 @@
 import { Home, Search, Library, Plus, Heart, Music2, Users, Mic2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CardSidebar } from "./CardSidebar";
 
 interface SidebarProps {
   className?: string;
@@ -39,19 +40,7 @@ export function Sidebar({ className, playlists = [] }: SidebarProps) {
           </button>
 
           {playlists.map((playlist, i) => (
-            <button key={i} className="w-full flex items-center gap-3 p-2 hover:bg-[#1a1a1a] rounded-md transition-colors group text-left">
-              {playlist.snippet?.thumbnails?.default?.url ? (
-                <img src={playlist.snippet.thumbnails.default.url} alt="" className="w-12 h-12 rounded object-cover" />
-              ) : (
-                <div className="w-12 h-12 bg-[#282828] rounded flex items-center justify-center">
-                  <Music2 size={24} />
-                </div>
-              )}
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-white font-medium truncate">{playlist.snippet?.title}</span>
-                <span className="text-xs">Playlist • {playlist.snippet?.channelTitle}</span>
-              </div>
-            </button>
+            <CardSidebar key={i} playlist={playlist} />
           ))}
         </div>
       </div>
