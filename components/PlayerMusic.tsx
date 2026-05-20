@@ -14,6 +14,8 @@ interface PlayerMusicProps {
   progress: number;
   duration: number;
   onSeek: (value: number) => void;
+  volume: number;
+  onVolumeChange: (value: number) => void;
 }
 
 export default function PlayerMusic({
@@ -24,7 +26,9 @@ export default function PlayerMusic({
   onPrevious,
   progress,
   duration,
-  onSeek
+  onSeek,
+  volume,
+  onVolumeChange
 }: PlayerMusicProps) {
   
   const formatTime = (seconds: number) => {
@@ -122,8 +126,20 @@ export default function PlayerMusic({
         <button className="text-[#b3b3b3] hover:text-white transition-colors">
           <FontAwesomeIcon icon={faVolumeHigh} className="text-sm" />
         </button>
-        <div className="w-24 h-1 bg-[#4d4d4d] rounded-full group cursor-pointer relative">
-           <div className="absolute inset-0 bg-white group-hover:bg-[#1ed760] w-1/2 rounded-full" />
+        <div className="relative w-24 h-1 bg-[#4d4d4d] rounded-full group cursor-pointer">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step="any"
+            value={volume}
+            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+            className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+          />
+          <div
+            className="h-full bg-white group-hover:bg-[#1ed760] transition-colors rounded-full"
+            style={{ width: `${volume * 100}%` }}
+          />
         </div>
       </div>
     </div>

@@ -8,9 +8,6 @@ import { Bell, User, ChevronLeft, ChevronRight, Settings, Clock, Play, MoreHoriz
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
 import PlayerMusic from "@/components/PlayerMusic";
-import dynamic from 'next/dynamic';
-
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
 
 interface Track {
   id: string;
@@ -43,26 +40,189 @@ export default function Page() {
   const [queueIndex, setQueueIndex] = useState(0);
   const [played, setPlayed] = useState(0); // 0 a 1
   const [duration, setDuration] = useState(0); // em segundos
-  const playerRef = useRef<any>(null);
+  const [volume, setVolume] = useState(1);
+  const queueRef = useRef<Track[]>([]);
+  const queueIndexRef = useRef(0);
+  const ytContainerRef = useRef<HTMLDivElement | null>(null);
+  const ytPlayerRef = useRef<any>(null);
+  const ytApiReady = useRef(false);
+  const fetchedForUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+
+  useEffect(() => {
+    queueIndexRef.current = queueIndex;
+  }, [queueIndex]);
+
+  const skipNext = () => {
+    const q = queueRef.current;
+    const idx = queueIndexRef.current;
+    if (idx < q.length - 1) {
+      const nextIndex = idx + 1;
+      setQueueIndex(nextIndex);
+      setCurrentTrack(q[nextIndex]);
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
+  const skipPrevious = () => {
+    const q = queueRef.current;
+    const idx = queueIndexRef.current;
+    if (idx > 0) {
+      const prevIndex = idx - 1;
+      setQueueIndex(prevIndex);
+      setCurrentTrack(q[prevIndex]);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if ((window as any).YT?.Player) {
+      ytApiReady.current = true;
+      return;
+    }
+    if ((window as any).__YT_IFRAME_API_LOADING__) return;
+    (window as any).__YT_IFRAME_API_LOADING__ = true;
+
+    (window as any).onYouTubeIframeAPIReady = () => {
+      ytApiReady.current = true;
+      (window as any).__YT_IFRAME_API_LOADING__ = false;
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!ytApiReady.current) return;
+    if (!ytContainerRef.current) return;
+    if (ytPlayerRef.current) return;
+
+    ytPlayerRef.current = new (window as any).YT.Player(ytContainerRef.current, {
+      height: "180",
+      width: "320",
+      videoId: "",
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        playsinline: 1,
+        rel: 0,
+        modestbranding: 1,
+        origin: window.location.origin
+      },
+      events: {
+        onReady: () => {
+          const player = ytPlayerRef.current;
+          if (!player) return;
+          player.setVolume(Math.round(volume * 100));
+        },
+        onStateChange: (event: any) => {
+          const state = event?.data;
+          const player = ytPlayerRef.current;
+          if (!player) return;
+          if (state === (window as any).YT.PlayerState.PLAYING) {
+            setIsPlaying(true);
+            const d = player.getDuration?.() || 0;
+            if (typeof d === "number" && d > 0) setDuration(d);
+          }
+          if (state === (window as any).YT.PlayerState.PAUSED) {
+            setIsPlaying(false);
+          }
+          if (state === (window as any).YT.PlayerState.ENDED) {
+            skipNext();
+          }
+        },
+        onError: (event: any) => {
+          const code = event?.data;
+          console.error("YouTube Player error:", code);
+          skipNext();
+        }
+      }
+    });
+  }, [volume]);
+
+  useEffect(() => {
+    const player = ytPlayerRef.current;
+    if (!player) return;
+    player.setVolume(Math.round(volume * 100));
+    if (volume > 0) player.unMute?.();
+  }, [volume]);
+
+  useEffect(() => {
+    if (!currentTrack) return;
+    const player = ytPlayerRef.current;
+    if (!player) return;
+    const videoId = currentTrack.id;
+    try {
+      player.loadVideoById({ videoId });
+      player.setVolume(Math.round(volume * 100));
+      player.unMute?.();
+      if (isPlaying) player.playVideo?.();
+      else player.pauseVideo?.();
+    } catch (e) {
+      console.error("Erro ao carregar vídeo:", e);
+      skipNext();
+    }
+  }, [currentTrack?.id]);
+
+  useEffect(() => {
+    const player = ytPlayerRef.current;
+    if (!player) return;
+    if (!currentTrack) return;
+    try {
+      if (isPlaying) {
+        player.playVideo?.();
+        player.unMute?.();
+      } else {
+        player.pauseVideo?.();
+      }
+    } catch {}
+  }, [isPlaying, currentTrack?.id]);
+
+  useEffect(() => {
+    const player = ytPlayerRef.current;
+    if (!player) return;
+    let timer: any;
+    const tick = () => {
+      try {
+        const d = player.getDuration?.() || 0;
+        const t = player.getCurrentTime?.() || 0;
+        if (typeof d === "number" && d > 0) {
+          setDuration(d);
+          setPlayed(Math.min(0.999999, t / d));
+        }
+      } catch {}
+    };
+    timer = setInterval(tick, 250);
+    return () => clearInterval(timer);
+  }, [currentTrack?.id]);
 
   const formatTrack = (item: any): Track => {
     // Para Playlist Items
     if (item.kind === 'youtube#playlistItem' || item.contentDetails?.videoId) {
+      const videoId = item.contentDetails.videoId;
       return {
-        id: item.contentDetails.videoId,
+        id: videoId,
         title: item.snippet.title,
         artist: item.snippet.videoOwnerChannelTitle || item.snippet.channelTitle,
         image: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
-        url: `https://www.youtube.com/watch?v=${item.contentDetails.videoId}`
+        url: `https://www.youtube.com/watch?v=${videoId}`
       };
     }
     // Para Search Results (Artistas)
+    const videoId = item.id.videoId || item.id;
     return {
-      id: item.id.videoId || item.id,
+      id: videoId,
       title: item.snippet.title,
       artist: item.snippet.channelTitle,
       image: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
-      url: `https://www.youtube.com/watch?v=${item.id.videoId || item.id}`
+      url: `https://www.youtube.com/watch?v=${videoId}`
     };
   };
 
@@ -76,32 +236,46 @@ export default function Page() {
   };
 
   const handleNext = () => {
-    if (queueIndex < queue.length - 1) {
-      const nextIndex = queueIndex + 1;
-      setQueueIndex(nextIndex);
-      setCurrentTrack(queue[nextIndex]);
-    }
+    skipNext();
   };
 
   const handlePrevious = () => {
-    if (queueIndex > 0) {
-      const prevIndex = queueIndex - 1;
-      setQueueIndex(prevIndex);
-      setCurrentTrack(queue[prevIndex]);
-    }
+    skipPrevious();
   };
 
   const togglePlay = () => {
     if (currentTrack) {
+      const player = ytPlayerRef.current;
+      if (player) {
+        const state = player.getPlayerState?.();
+        if (state === (window as any).YT?.PlayerState?.PLAYING) {
+          player.pauseVideo?.();
+          setIsPlaying(false);
+        } else {
+          player.playVideo?.();
+          player.unMute?.();
+          setIsPlaying(true);
+        }
+        return;
+      }
       setIsPlaying(!isPlaying);
     }
   };
 
   const handleSeek = (amount: number) => {
     setPlayed(amount);
-    if (playerRef.current) {
-      playerRef.current.seekTo(amount, 'fraction');
-    }
+    const player = ytPlayerRef.current;
+    if (!player) return;
+    try {
+      const d = player.getDuration?.() || duration;
+      player.seekTo?.(d * amount, true);
+      if (!isPlaying) player.pauseVideo?.();
+    } catch {}
+  };
+
+  const handleVolumeChange = (nextVolume: number) => {
+    const clamped = Math.max(0, Math.min(1, nextVolume));
+    setVolume(clamped);
   };
 
   const spotifyColors = [
@@ -118,6 +292,14 @@ export default function Page() {
   ];
 
   useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) {
+      fetchedForUserId.current = null;
+      return;
+    }
+    if (fetchedForUserId.current === userId) return;
+    fetchedForUserId.current = userId;
+
     async function fetchYouTubeData() {
       try {
         const { data, error } = await authClient.getAccessToken({
@@ -170,11 +352,9 @@ export default function Page() {
       }
     }
 
-    if (session) {
-      document.title = `Spotify – ${session.user.name}`;
-      fetchYouTubeData();
-    }
-  }, [session]);
+    document.title = `Spotify – ${session.user.name}`;
+    fetchYouTubeData();
+  }, [session?.user?.id, session?.user?.name]);
 
   const openPlaylistDetail = async (playlist: any) => {
     setSelectedPlaylist(playlist);
@@ -195,7 +375,30 @@ export default function Page() {
           headers: { Authorization: `Bearer ${data.accessToken}` }
         });
         const trackData = await res.json();
-        setPlaylistTracks(trackData.items || []);
+        const items = trackData.items || [];
+        const videoIds = items
+          .map((it: any) => it?.contentDetails?.videoId)
+          .filter(Boolean);
+
+        if (videoIds.length === 0) {
+          setPlaylistTracks([]);
+          return;
+        }
+
+        const embeddable = new Set<string>();
+        for (let i = 0; i < videoIds.length; i += 50) {
+          const chunk = videoIds.slice(i, i + 50);
+          const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=status&id=${chunk.join(",")}`, {
+            headers: { Authorization: `Bearer ${data.accessToken}` }
+          });
+          const vData = await vRes.json();
+          for (const v of vData.items || []) {
+            if (v?.status?.embeddable) embeddable.add(v.id);
+          }
+        }
+
+        const playableItems = items.filter((it: any) => embeddable.has(it?.contentDetails?.videoId));
+        setPlaylistTracks(playableItems);
       }
     } catch (err) {
       console.error("Erro ao buscar músicas da playlist:", err);
@@ -221,7 +424,7 @@ export default function Page() {
       if (data?.accessToken) {
         // Buscar vídeos do canal (simulando "músicas populares")
         const channelId = artist.snippet.resourceId.channelId;
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=viewCount&type=video`, {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=viewCount&type=video&videoEmbeddable=true`, {
           headers: { Authorization: `Bearer ${data.accessToken}` }
         });
         const videoData = await res.json();
@@ -580,52 +783,11 @@ export default function Page() {
         </main>
       </div>
 
-      {/* Player de áudio visível mas escondido para evitar bloqueios de áudio do navegador */}
       <div
-        className={`fixed bottom-24 right-4 w-[320px] h-45 z-50 overflow-hidden rounded-lg shadow-2xl border border-white/10 transition-opacity duration-500 ${currentTrack ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
+        className="fixed -left-[9999px] top-0 w-[320px] h-[180px] overflow-hidden"
+        aria-hidden="true"
       >
-        <ReactPlayer
-          {...({
-            ref: playerRef,
-            url: currentTrack?.url || "",
-            playing: isPlaying,
-            volume: 1,
-            muted: false,
-            playsinline: true,
-            width: "100%",
-            height: "100%",
-            onProgress: (state: any) => {
-              if (isPlaying) setPlayed(state.played);
-            },
-            onReady: (player: any) => {
-              console.log("YouTube Player Ready");
-              setDuration(player.getDuration());
-            },
-            onPlay: () => setIsPlaying(true),
-            onPause: () => setIsPlaying(false),
-            onEnded: handleNext,
-            onError: (e: any) => {
-              console.error("Erro no Player YouTube:", e);
-              // Tentar pular para a próxima se houver erro de licenciamento
-              handleNext();
-            },
-            onBuffer: () => console.log("Carregando música..."),
-            onBufferEnd: () => console.log("Carregamento finalizado"),
-            config: {
-              youtube: {
-                playerVars: {
-                  autoplay: 1,
-                  controls: 1,
-                  modestbranding: 1,
-                  rel: 0,
-                  showinfo: 0,
-                  origin: typeof window !== 'undefined' ? window.location.origin : ''
-                }
-              }
-            }
-          } as any)}
-        />
+        <div ref={ytContainerRef} />
       </div>
 
       <PlayerMusic
@@ -637,6 +799,8 @@ export default function Page() {
         progress={played}
         duration={duration}
         onSeek={handleSeek}
+        volume={volume}
+        onVolumeChange={handleVolumeChange}
       />
     </>
   );
