@@ -845,7 +845,7 @@ export default function Page() {
       </div>
 
       <div
-        className="fixed -left-[9999px] top-0 w-[320px] h-[180px] overflow-hidden"
+        className="fixed -left-2499.75 top-0 w-[320px] h-45 overflow-hidden"
         aria-hidden="true"
       >
         <div id="yt-player" ref={ytContainerRef} />
