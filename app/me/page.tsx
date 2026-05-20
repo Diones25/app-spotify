@@ -514,7 +514,7 @@ export default function Page() {
         <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
 
         {/* Conteúdo Principal */}
-        <main className="flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative">
+        <main className="h-187.5 flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative">
           {/* Header Superior */}
           <Header setView={setView} />
 

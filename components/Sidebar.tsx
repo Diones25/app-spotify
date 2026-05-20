@@ -8,7 +8,7 @@ interface SidebarProps {
 
 export function Sidebar({ className, playlists = [] }: SidebarProps) {
   return (
-    <div className={cn("flex flex-col h-full bg-black text-[#b3b3b3] pr-2 pl-2 gap-2", className)}>
+    <div className={cn("flex flex-col h-187.5 bg-black text-[#b3b3b3] pr-2 pl-2 gap-2", className)}>
       {/* Biblioteca */}
       <div className="bg-[#121212] rounded-lg flex-1 flex flex-col overflow-hidden">
         <div className="p-4 flex items-center justify-between shadow-md">
