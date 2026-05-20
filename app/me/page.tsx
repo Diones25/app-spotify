@@ -45,7 +45,7 @@ export default function Page() {
   const queueIndexRef = useRef(0);
   const ytContainerRef = useRef<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<any>(null);
-  const ytApiReady = useRef(false);
+  const [ytApiReady, setYtApiReady] = useState(false);
   const fetchedForUserId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -81,14 +81,14 @@ export default function Page() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if ((window as any).YT?.Player) {
-      ytApiReady.current = true;
+      setYtApiReady(true);
       return;
     }
     if ((window as any).__YT_IFRAME_API_LOADING__) return;
     (window as any).__YT_IFRAME_API_LOADING__ = true;
 
     (window as any).onYouTubeIframeAPIReady = () => {
-      ytApiReady.current = true;
+      setYtApiReady(true);
       (window as any).__YT_IFRAME_API_LOADING__ = false;
     };
 
@@ -100,10 +100,11 @@ export default function Page() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!ytApiReady.current) return;
+    if (!ytApiReady) return;
     if (!ytContainerRef.current) return;
     if (ytPlayerRef.current) return;
 
+    console.log("Inicializando YouTube IFrame Player API...");
     ytPlayerRef.current = new (window as any).YT.Player(ytContainerRef.current, {
       height: "180",
       width: "320",
@@ -121,6 +122,7 @@ export default function Page() {
           const player = ytPlayerRef.current;
           if (!player) return;
           player.setVolume(Math.round(volume * 100));
+          console.log("YouTube Player pronto");
         },
         onStateChange: (event: any) => {
           const state = event?.data;
@@ -145,7 +147,7 @@ export default function Page() {
         }
       }
     });
-  }, [volume]);
+  }, [ytApiReady, volume]);
 
   useEffect(() => {
     const player = ytPlayerRef.current;
@@ -163,13 +165,30 @@ export default function Page() {
       player.loadVideoById({ videoId });
       player.setVolume(Math.round(volume * 100));
       player.unMute?.();
-      if (isPlaying) player.playVideo?.();
+      if (isPlaying) {
+        player.playVideo?.();
+        setTimeout(() => player.playVideo?.(), 0);
+      }
       else player.pauseVideo?.();
     } catch (e) {
       console.error("Erro ao carregar vídeo:", e);
       skipNext();
     }
   }, [currentTrack?.id]);
+
+  useEffect(() => {
+    if (!ytApiReady) return;
+    const player = ytPlayerRef.current;
+    if (!player) return;
+    if (!currentTrack) return;
+    try {
+      player.cueVideoById?.({ videoId: currentTrack.id });
+      if (isPlaying) {
+        player.playVideo?.();
+        player.unMute?.();
+      }
+    } catch {}
+  }, [ytApiReady]);
 
   useEffect(() => {
     const player = ytPlayerRef.current;
@@ -787,7 +806,7 @@ export default function Page() {
         className="fixed -left-[9999px] top-0 w-[320px] h-[180px] overflow-hidden"
         aria-hidden="true"
       >
-        <div ref={ytContainerRef} />
+        <div id="yt-player" ref={ytContainerRef} />
       </div>
 
       <PlayerMusic
