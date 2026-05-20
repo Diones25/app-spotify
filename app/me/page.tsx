@@ -100,14 +100,7 @@ export default function Page() {
   const handleSeek = (amount: number) => {
     setPlayed(amount);
     if (playerRef.current) {
-      // O ReactPlayer expõe o seekTo diretamente, mas em carregamento dinâmico 
-      // às vezes precisamos acessar o wrapper interno ou garantir que a função existe
-      const internalPlayer = playerRef.current.getInternalPlayer();
-      if (internalPlayer && typeof internalPlayer.seekTo === 'function') {
-        internalPlayer.seekTo(amount * duration, true);
-      } else if (typeof playerRef.current.seekTo === 'function') {
-        playerRef.current.seekTo(amount);
-      }
+      playerRef.current.seekTo(amount, 'fraction');
     }
   };
 
@@ -130,17 +123,17 @@ export default function Page() {
         const { data, error } = await authClient.getAccessToken({
           providerId: "google",
         });
-        
+
         if (data?.accessToken) {
           setYoutubeToken(data.accessToken);
-          
+
           // Buscar Playlists
           const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=10`, {
             headers: { Authorization: `Bearer ${data.accessToken}` }
           });
 
           if (plRes.status === 401 || plRes.status === 403) {
-             throw new Error("Token expirado ou inválido");
+            throw new Error("Token expirado ou inválido");
           }
 
           const plData = await plRes.json();
@@ -176,7 +169,7 @@ export default function Page() {
         setLoading(false);
       }
     }
-    
+
     if (session) {
       document.title = `Spotify – ${session.user.name}`;
       fetchYouTubeData();
@@ -187,16 +180,16 @@ export default function Page() {
     setSelectedPlaylist(playlist);
     setView("playlist-detail");
     setLoadingTracks(true);
-    
+
     // Escolher uma cor aleatória
     const color = spotifyColors[Math.floor(Math.random() * spotifyColors.length)];
     setRandomColor(color);
-    
+
     try {
       const { data } = await authClient.getAccessToken({
         providerId: "google",
       });
-      
+
       if (data?.accessToken) {
         const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlist.id}&maxResults=50`, {
           headers: { Authorization: `Bearer ${data.accessToken}` }
@@ -215,16 +208,16 @@ export default function Page() {
     setSelectedArtist(artist);
     setView("artist-detail");
     setLoadingTracks(true);
-    
+
     // Escolher uma cor aleatória
     const color = spotifyColors[Math.floor(Math.random() * spotifyColors.length)];
     setRandomColor(color);
-    
+
     try {
       const { data } = await authClient.getAccessToken({
         providerId: "google",
       });
-      
+
       if (data?.accessToken) {
         // Buscar vídeos do canal (simulando "músicas populares")
         const channelId = artist.snippet.resourceId.channelId;
@@ -260,7 +253,7 @@ export default function Page() {
         <main className="flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative">
           {/* Header Superior */}
           <Header setView={setView} />
-          
+
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
             {view === "home" ? (
@@ -289,7 +282,7 @@ export default function Page() {
                 <section>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Playlists públicas</h2>
-                    <button 
+                    <button
                       onClick={() => setView("playlists")}
                       className="text-[#b3b3b3] text-sm font-bold hover:underline cursor-pointer"
                     >
@@ -297,27 +290,27 @@ export default function Page() {
                     </button>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                  {loading ? (
-                    Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
-                  ) : (
-                    playlists.map((pl) => (
-                      <SpotifyCard 
-                        key={pl.id}
-                        title={pl.snippet.title}
-                        subtitle={`De ${pl.snippet.channelTitle}`}
-                        image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
-                        onClick={() => openPlaylistDetail(pl)}
-                      />
-                    ))
-                  )}
-                </div>
+                    {loading ? (
+                      Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
+                    ) : (
+                      playlists.map((pl) => (
+                        <SpotifyCard
+                          key={pl.id}
+                          title={pl.snippet.title}
+                          subtitle={`De ${pl.snippet.channelTitle}`}
+                          image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
+                          onClick={() => openPlaylistDetail(pl)}
+                        />
+                      ))
+                    )}
+                  </div>
                 </section>
 
                 {/* Seção de Artistas (Inscrições) */}
                 <section>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Seguindo</h2>
-                    <button 
+                    <button
                       onClick={() => setView("artists")}
                       className="text-[#b3b3b3] text-sm font-bold hover:underline cursor-pointer"
                     >
@@ -325,33 +318,33 @@ export default function Page() {
                     </button>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                  {loading ? (
-                    Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
-                  ) : (
-                    subscriptions.map((sub) => (
-                      <SpotifyCard 
-                        key={sub.id}
-                        title={sub.snippet.title}
-                        subtitle="Canal"
-                        type="artist"
-                        image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
-                        onClick={() => openArtistDetail(sub)}
-                      />
-                    ))
-                  )}
-                </div>
+                    {loading ? (
+                      Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
+                    ) : (
+                      subscriptions.map((sub) => (
+                        <SpotifyCard
+                          key={sub.id}
+                          title={sub.snippet.title}
+                          subtitle="Canal"
+                          type="artist"
+                          image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
+                          onClick={() => openArtistDetail(sub)}
+                        />
+                      ))
+                    )}
+                  </div>
                 </section>
               </>
             ) : view === "playlist-detail" && selectedPlaylist ? (
-            /* Visualização Detalhada da Playlist */
-            <div className="-m-6">
-              {/* Header da Playlist com Gradiente Dinâmico */}
-              <div className={`bg-linear-to-b ${randomColor} to-[#121212] p-6 pt-12 flex flex-col md:flex-row items-end gap-6`}>
-                <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-md overflow-hidden shrink-0">
-                    <img 
-                      src={selectedPlaylist.snippet.thumbnails?.high?.url || selectedPlaylist.snippet.thumbnails?.medium?.url} 
-                      alt={selectedPlaylist.snippet.title} 
-                      className="w-full h-full object-cover" 
+              /* Visualização Detalhada da Playlist */
+              <div className="-m-6">
+                {/* Header da Playlist com Gradiente Dinâmico */}
+                <div className={`bg-linear-to-b ${randomColor} to-[#121212] p-6 pt-12 flex flex-col md:flex-row items-end gap-6`}>
+                  <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-md overflow-hidden shrink-0">
+                    <img
+                      src={selectedPlaylist.snippet.thumbnails?.high?.url || selectedPlaylist.snippet.thumbnails?.medium?.url}
+                      alt={selectedPlaylist.snippet.title}
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex flex-col gap-2 pb-2">
@@ -371,7 +364,7 @@ export default function Page() {
                 {/* Controles e Lista de Músicas */}
                 <div className="bg-[#121212]/30 backdrop-blur-sm p-6 space-y-6 min-h-screen">
                   <div className="flex items-center gap-8">
-                    <button 
+                    <button
                       onClick={() => {
                         if (playlistTracks.length > 0) {
                           const tracks = playlistTracks.map(formatTrack);
@@ -411,8 +404,8 @@ export default function Page() {
                         const track = formatTrack(item);
                         const isCurrent = currentTrack?.id === track.id;
                         return (
-                          <div 
-                            key={item.id} 
+                          <div
+                            key={item.id}
                             onClick={() => playTrack(track, playlistTracks.map(formatTrack))}
                             className="grid grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center cursor-pointer"
                           >
@@ -426,10 +419,10 @@ export default function Page() {
                               ) : i + 1}
                             </span>
                             <div className="flex items-center gap-3">
-                              <img 
-                                src={track.image} 
-                                alt="" 
-                                className="w-10 h-10 rounded object-cover" 
+                              <img
+                                src={track.image}
+                                alt=""
+                                className="w-10 h-10 rounded object-cover"
                               />
                               <div className="flex flex-col min-w-0">
                                 <span className={`font-medium truncate group-hover:text-white ${isCurrent ? 'text-[#1ed760]' : 'text-white'}`}>
@@ -460,92 +453,92 @@ export default function Page() {
                   </div>
                 </div>
               </div>
-          ) : view === "artist-detail" && selectedArtist ? (
-            /* Visualização Detalhada do Artista */
-            <div className="-m-6">
-              {/* Header do Artista com Gradiente e Imagem de Fundo */}
-              <div className={`relative h-[40vh] min-h-85 flex items-end p-6 bg-linear-to-b ${randomColor} to-[#121212]/80`}>
-                <div className="flex flex-col gap-4 z-10">
-                  <div className="flex items-center gap-2 text-white">
-                    <div className="bg-blue-500 rounded-full p-1"><Settings size={12} className="text-white fill-white" /></div>
-                    <span className="text-sm font-bold">Artista verificado</span>
+            ) : view === "artist-detail" && selectedArtist ? (
+              /* Visualização Detalhada do Artista */
+              <div className="-m-6">
+                {/* Header do Artista com Gradiente e Imagem de Fundo */}
+                <div className={`relative h-[40vh] min-h-85 flex items-end p-6 bg-linear-to-b ${randomColor} to-[#121212]/80`}>
+                  <div className="flex flex-col gap-4 z-10">
+                    <div className="flex items-center gap-2 text-white">
+                      <div className="bg-blue-500 rounded-full p-1"><Settings size={12} className="text-white fill-white" /></div>
+                      <span className="text-sm font-bold">Artista verificado</span>
+                    </div>
+                    <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter">{selectedArtist.snippet.title}</h1>
+                    <span className="text-white font-medium">854.321 ouvintes mensais</span>
                   </div>
-                  <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter">{selectedArtist.snippet.title}</h1>
-                  <span className="text-white font-medium">854.321 ouvintes mensais</span>
-                </div>
-              </div>
-
-              {/* Controles e Lista de Músicas Populares */}
-              <div className="bg-[#121212] p-6 space-y-8">
-                <div className="flex items-center gap-8">
-                  <button 
-                    onClick={() => {
-                      if (artistVideos.length > 0) {
-                        const tracks = artistVideos.map(formatTrack);
-                        playTrack(tracks[0], tracks);
-                      }
-                    }}
-                    className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
-                  >
-                    {currentTrack && isPlaying && queue.some(t => t.id === formatTrack(artistVideos[0]).id) ? (
-                      <Pause fill="black" size={28} />
-                    ) : (
-                      <Play fill="black" size={28} />
-                    )}
-                  </button>
-                  <button className="border border-[#878787] text-white px-4 py-1 rounded-full text-sm font-bold hover:border-white transition-colors">Seguindo</button>
-                  <button className="text-[#b3b3b3] hover:text-white transition-colors"><MoreHorizontal size={28} /></button>
                 </div>
 
-                <section>
-                  <h2 className="text-2xl font-bold text-white mb-4">Populares</h2>
-                  <div className="space-y-1">
-                    {loadingTracks ? (
-                      Array(5).fill(0).map((_, i) => (
-                        <div key={i} className="h-14 bg-[#181818] rounded-md animate-pulse" />
-                      ))
-                    ) : (
-                      artistVideos.map((item, i) => {
-                        const track = formatTrack(item);
-                        const isCurrent = currentTrack?.id === track.id;
-                        return (
-                          <div 
-                            key={track.id} 
-                            onClick={() => playTrack(track, artistVideos.map(formatTrack))}
-                            className="flex items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors cursor-pointer"
-                          >
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <span className={`w-4 text-center text-sm ${isCurrent ? 'text-[#1ed760]' : 'text-[#b3b3b3] group-hover:text-white'}`}>
-                                {isCurrent && isPlaying ? (
-                                  <div className="flex items-end gap-0.5 h-3 justify-center">
-                                    <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.6s' }} />
-                                    <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.8s' }} />
-                                    <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.5s' }} />
-                                  </div>
-                                ) : i + 1}
-                              </span>
-                              <img src={track.image} alt="" className="w-10 h-10 rounded object-cover" />
-                              <div className="flex flex-col min-w-0">
-                                <span className={`font-medium truncate group-hover:text-white ${isCurrent ? 'text-[#1ed760]' : 'text-white'}`}>
-                                  {track.title}
+                {/* Controles e Lista de Músicas Populares */}
+                <div className="bg-[#121212] p-6 space-y-8">
+                  <div className="flex items-center gap-8">
+                    <button
+                      onClick={() => {
+                        if (artistVideos.length > 0) {
+                          const tracks = artistVideos.map(formatTrack);
+                          playTrack(tracks[0], tracks);
+                        }
+                      }}
+                      className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
+                    >
+                      {currentTrack && isPlaying && queue.some(t => t.id === formatTrack(artistVideos[0]).id) ? (
+                        <Pause fill="black" size={28} />
+                      ) : (
+                        <Play fill="black" size={28} />
+                      )}
+                    </button>
+                    <button className="border border-[#878787] text-white px-4 py-1 rounded-full text-sm font-bold hover:border-white transition-colors">Seguindo</button>
+                    <button className="text-[#b3b3b3] hover:text-white transition-colors"><MoreHorizontal size={28} /></button>
+                  </div>
+
+                  <section>
+                    <h2 className="text-2xl font-bold text-white mb-4">Populares</h2>
+                    <div className="space-y-1">
+                      {loadingTracks ? (
+                        Array(5).fill(0).map((_, i) => (
+                          <div key={i} className="h-14 bg-[#181818] rounded-md animate-pulse" />
+                        ))
+                      ) : (
+                        artistVideos.map((item, i) => {
+                          const track = formatTrack(item);
+                          const isCurrent = currentTrack?.id === track.id;
+                          return (
+                            <div
+                              key={track.id}
+                              onClick={() => playTrack(track, artistVideos.map(formatTrack))}
+                              className="flex items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <span className={`w-4 text-center text-sm ${isCurrent ? 'text-[#1ed760]' : 'text-[#b3b3b3] group-hover:text-white'}`}>
+                                  {isCurrent && isPlaying ? (
+                                    <div className="flex items-end gap-0.5 h-3 justify-center">
+                                      <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.6s' }} />
+                                      <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.8s' }} />
+                                      <div className="w-0.5 bg-[#1ed760] animate-bounce" style={{ animationDuration: '0.5s' }} />
+                                    </div>
+                                  ) : i + 1}
                                 </span>
-                                <span className="text-[#b3b3b3] text-xs">Videoclipe</span>
+                                <img src={track.image} alt="" className="w-10 h-10 rounded object-cover" />
+                                <div className="flex flex-col min-w-0">
+                                  <span className={`font-medium truncate group-hover:text-white ${isCurrent ? 'text-[#1ed760]' : 'text-white'}`}>
+                                    {track.title}
+                                  </span>
+                                  <span className="text-[#b3b3b3] text-xs">Videoclipe</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-8">
+                                <span className="text-[#b3b3b3] text-sm hidden md:block">1.234.567</span>
+                                <span className="text-[#b3b3b3] text-sm mr-4">3:24</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-8">
-                              <span className="text-[#b3b3b3] text-sm hidden md:block">1.234.567</span>
-                              <span className="text-[#b3b3b3] text-sm mr-4">3:24</span>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                  <button className="text-[#b3b3b3] text-sm font-bold hover:text-white mt-4 uppercase tracking-wider">Ver mais</button>
-                </section>
+                          );
+                        })
+                      )}
+                    </div>
+                    <button className="text-[#b3b3b3] text-sm font-bold hover:text-white mt-4 uppercase tracking-wider">Ver mais</button>
+                  </section>
+                </div>
               </div>
-            </div>
-          ) : view === "artists" ? (
+            ) : view === "artists" ? (
               /* Visualização "Mostrar Tudo" de Artistas */
               <section>
                 <div className="flex items-center justify-between mb-8">
@@ -553,7 +546,7 @@ export default function Page() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                   {allSubscriptions.map((sub) => (
-                    <SpotifyCard 
+                    <SpotifyCard
                       key={sub.id}
                       title={sub.snippet.title}
                       subtitle="Artista"
@@ -572,7 +565,7 @@ export default function Page() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                   {allPlaylists.map((pl) => (
-                    <SpotifyCard 
+                    <SpotifyCard
                       key={pl.id}
                       title={pl.snippet.title}
                       subtitle={`De ${pl.snippet.channelTitle}`}
@@ -588,48 +581,54 @@ export default function Page() {
       </div>
 
       {/* Player de áudio visível mas escondido para evitar bloqueios de áudio do navegador */}
-      <div 
-        className="fixed bottom-24 right-4 w-[320px] h-[180px] z-50 overflow-hidden rounded-lg shadow-2xl border border-white/10"
-        style={{ display: currentTrack ? 'block' : 'none' }}
+      <div
+        className={`fixed bottom-24 right-4 w-[320px] h-45 z-50 overflow-hidden rounded-lg shadow-2xl border border-white/10 transition-opacity duration-500 ${currentTrack ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
       >
         <ReactPlayer
-           {...({
-             ref: playerRef,
-             url: currentTrack?.url || "",
-             playing: isPlaying,
-             volume: 1,
-             muted: false,
-             playsinline: true,
-             width: "100%",
-             height: "100%",
-             onProgress: (state: any) => {
-               if (isPlaying) setPlayed(state.played);
-             },
-             onReady: (player: any) => {
-               console.log("YouTube Player Ready");
-               setDuration(player.getDuration());
-             },
-             onEnded: handleNext,
-             onError: (e: any) => console.error("Erro no Player YouTube:", e),
-             onBuffer: () => console.log("Carregando música..."),
-             onBufferEnd: () => console.log("Carregamento finalizado"),
-             config: {
-               youtube: {
-                 playerVars: { 
-                   autoplay: 1,
-                   controls: 1,
-                   modestbranding: 1,
-                   rel: 0,
-                   showinfo: 0,
-                   origin: typeof window !== 'undefined' ? window.location.origin : ''
-                 }
-               }
-             }
-           } as any)}
-         />
+          {...({
+            ref: playerRef,
+            url: currentTrack?.url || "",
+            playing: isPlaying,
+            volume: 1,
+            muted: false,
+            playsinline: true,
+            width: "100%",
+            height: "100%",
+            onProgress: (state: any) => {
+              if (isPlaying) setPlayed(state.played);
+            },
+            onReady: (player: any) => {
+              console.log("YouTube Player Ready");
+              setDuration(player.getDuration());
+            },
+            onPlay: () => setIsPlaying(true),
+            onPause: () => setIsPlaying(false),
+            onEnded: handleNext,
+            onError: (e: any) => {
+              console.error("Erro no Player YouTube:", e);
+              // Tentar pular para a próxima se houver erro de licenciamento
+              handleNext();
+            },
+            onBuffer: () => console.log("Carregando música..."),
+            onBufferEnd: () => console.log("Carregamento finalizado"),
+            config: {
+              youtube: {
+                playerVars: {
+                  autoplay: 1,
+                  controls: 1,
+                  modestbranding: 1,
+                  rel: 0,
+                  showinfo: 0,
+                  origin: typeof window !== 'undefined' ? window.location.origin : ''
+                }
+              }
+            }
+          } as any)}
+        />
       </div>
 
-      <PlayerMusic 
+      <PlayerMusic
         currentTrack={currentTrack}
         isPlaying={isPlaying}
         onTogglePlay={togglePlay}
