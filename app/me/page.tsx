@@ -67,6 +67,7 @@ export default function Page() {
   };
 
   const playTrack = (track: Track, newQueue: Track[]) => {
+    console.log("Iniciando reprodução:", track.title, track.url);
     setQueue(newQueue);
     const index = newQueue.findIndex(t => t.id === track.id);
     setQueueIndex(index !== -1 ? index : 0);
@@ -98,7 +99,16 @@ export default function Page() {
 
   const handleSeek = (amount: number) => {
     setPlayed(amount);
-    playerRef.current?.seekTo(amount);
+    if (playerRef.current) {
+      // O ReactPlayer expõe o seekTo diretamente, mas em carregamento dinâmico 
+      // às vezes precisamos acessar o wrapper interno ou garantir que a função existe
+      const internalPlayer = playerRef.current.getInternalPlayer();
+      if (internalPlayer && typeof internalPlayer.seekTo === 'function') {
+        internalPlayer.seekTo(amount * duration, true);
+      } else if (typeof playerRef.current.seekTo === 'function') {
+        playerRef.current.seekTo(amount);
+      }
+    }
   };
 
   const spotifyColors = [
@@ -370,7 +380,7 @@ export default function Page() {
                       }}
                       className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
                     >
-                      {currentTrack && isPlaying && queue.some(t => playlistTracks.some(pt => pt.contentDetails.videoId === t.id)) ? (
+                      {currentTrack && isPlaying && queue.some(t => t.id === formatTrack(playlistTracks[0]).id) ? (
                         <Pause fill="black" size={28} />
                       ) : (
                         <Play fill="black" size={28} />
@@ -477,7 +487,7 @@ export default function Page() {
                     }}
                     className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
                   >
-                    {currentTrack && isPlaying && queue.some(t => artistVideos.some(av => (av.id.videoId || av.id) === t.id)) ? (
+                    {currentTrack && isPlaying && queue.some(t => t.id === formatTrack(artistVideos[0]).id) ? (
                       <Pause fill="black" size={28} />
                     ) : (
                       <Play fill="black" size={28} />
@@ -577,28 +587,47 @@ export default function Page() {
         </main>
       </div>
 
-      {currentTrack && (
-        <div className="fixed -bottom-250 -left-250 opacity-0 pointer-events-none">
-          <ReactPlayer
-            ref={playerRef}
-            url={currentTrack.url}
-            playing={isPlaying}
-            onProgress={(state: any) => setPlayed(state.played)}
-            onReady={(player: any) => setDuration(player.getDuration())}
-            onEnded={handleNext}
-            config={{
-              youtube: {
-                playerVars: { 
-                  autoplay: 1,
-                  controls: 0,
-                  showinfo: 0,
-                  rel: 0
-                }
-              }
-            } as any}
-          />
-        </div>
-      )}
+      {/* Player de áudio visível mas escondido para evitar bloqueios de áudio do navegador */}
+      <div 
+        className="fixed bottom-24 right-4 w-[320px] h-[180px] z-50 overflow-hidden rounded-lg shadow-2xl border border-white/10"
+        style={{ display: currentTrack ? 'block' : 'none' }}
+      >
+        <ReactPlayer
+           {...({
+             ref: playerRef,
+             url: currentTrack?.url || "",
+             playing: isPlaying,
+             volume: 1,
+             muted: false,
+             playsinline: true,
+             width: "100%",
+             height: "100%",
+             onProgress: (state: any) => {
+               if (isPlaying) setPlayed(state.played);
+             },
+             onReady: (player: any) => {
+               console.log("YouTube Player Ready");
+               setDuration(player.getDuration());
+             },
+             onEnded: handleNext,
+             onError: (e: any) => console.error("Erro no Player YouTube:", e),
+             onBuffer: () => console.log("Carregando música..."),
+             onBufferEnd: () => console.log("Carregamento finalizado"),
+             config: {
+               youtube: {
+                 playerVars: { 
+                   autoplay: 1,
+                   controls: 1,
+                   modestbranding: 1,
+                   rel: 0,
+                   showinfo: 0,
+                   origin: typeof window !== 'undefined' ? window.location.origin : ''
+                 }
+               }
+             }
+           } as any)}
+         />
+      </div>
 
       <PlayerMusic 
         currentTrack={currentTrack}
