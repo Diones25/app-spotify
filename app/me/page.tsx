@@ -345,7 +345,7 @@ export default function Page() {
           setYoutubeToken(data.accessToken);
 
           // Buscar Playlists
-          const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=10`, {
+          const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`, {
             headers: { Authorization: `Bearer ${data.accessToken}` }
           });
 
@@ -364,7 +364,7 @@ export default function Page() {
           setAllPlaylists(plAllData.items || []);
 
           // Buscar Inscrições (Artistas)
-          const subRes = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=10`, {
+          const subRes = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`, {
             headers: { Authorization: `Bearer ${data.accessToken}` }
           });
           const subData = await subRes.json();
