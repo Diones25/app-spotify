@@ -41,6 +41,7 @@ export default function Page() {
   const [played, setPlayed] = useState(0); // 0 a 1
   const [duration, setDuration] = useState(0); // em segundos
   const [volume, setVolume] = useState(1);
+  const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const queueRef = useRef<Track[]>([]);
   const queueIndexRef = useRef(0);
   const ytContainerRef = useRef<HTMLDivElement | null>(null);
@@ -78,6 +79,24 @@ export default function Page() {
     }
   };
 
+  const parseYouTubeDurationSeconds = (value: string) => {
+    const match = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(value);
+    if (!match) return 0;
+    const hours = parseInt(match[1] || "0", 10);
+    const minutes = parseInt(match[2] || "0", 10);
+    const seconds = parseInt(match[3] || "0", 10);
+    return hours * 3600 + minutes * 60 + seconds;
+  };
+
+  const formatDuration = (seconds: number | undefined) => {
+    if (!seconds || seconds <= 0) return "--:--";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if ((window as any).YT?.Player) {
@@ -104,7 +123,6 @@ export default function Page() {
     if (!ytContainerRef.current) return;
     if (ytPlayerRef.current) return;
 
-    console.log("Inicializando YouTube IFrame Player API...");
     ytPlayerRef.current = new (window as any).YT.Player(ytContainerRef.current, {
       height: "180",
       width: "320",
@@ -122,7 +140,6 @@ export default function Page() {
           const player = ytPlayerRef.current;
           if (!player) return;
           player.setVolume(Math.round(volume * 100));
-          console.log("YouTube Player pronto");
         },
         onStateChange: (event: any) => {
           const state = event?.data;
@@ -246,7 +263,6 @@ export default function Page() {
   };
 
   const playTrack = (track: Track, newQueue: Track[]) => {
-    console.log("Iniciando reprodução:", track.title, track.url);
     setQueue(newQueue);
     const index = newQueue.findIndex(t => t.id === track.id);
     setQueueIndex(index !== -1 ? index : 0);
@@ -405,19 +421,25 @@ export default function Page() {
         }
 
         const embeddable = new Set<string>();
+        const durations: Record<string, number> = {};
         for (let i = 0; i < videoIds.length; i += 50) {
           const chunk = videoIds.slice(i, i + 50);
-          const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=status&id=${chunk.join(",")}`, {
+          const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${chunk.join(",")}`, {
             headers: { Authorization: `Bearer ${data.accessToken}` }
           });
           const vData = await vRes.json();
           for (const v of vData.items || []) {
             if (v?.status?.embeddable) embeddable.add(v.id);
+            const iso = v?.contentDetails?.duration;
+            if (typeof iso === "string") {
+              durations[v.id] = parseYouTubeDurationSeconds(iso);
+            }
           }
         }
 
         const playableItems = items.filter((it: any) => embeddable.has(it?.contentDetails?.videoId));
         setPlaylistTracks(playableItems);
+        setVideoDurations(prev => ({ ...prev, ...durations }));
       }
     } catch (err) {
       console.error("Erro ao buscar músicas da playlist:", err);
@@ -447,7 +469,27 @@ export default function Page() {
           headers: { Authorization: `Bearer ${data.accessToken}` }
         });
         const videoData = await res.json();
-        setArtistVideos(videoData.items || []);
+        const items = videoData.items || [];
+        setArtistVideos(items);
+
+        const ids = items.map((it: any) => it?.id?.videoId).filter(Boolean);
+        if (ids.length > 0) {
+          const durations: Record<string, number> = {};
+          for (let i = 0; i < ids.length; i += 50) {
+            const chunk = ids.slice(i, i + 50);
+            const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&id=${chunk.join(",")}`, {
+              headers: { Authorization: `Bearer ${data.accessToken}` }
+            });
+            const vData = await vRes.json();
+            for (const v of vData.items || []) {
+              const iso = v?.contentDetails?.duration;
+              if (typeof iso === "string") {
+                durations[v.id] = parseYouTubeDurationSeconds(iso);
+              }
+            }
+          }
+          setVideoDurations(prev => ({ ...prev, ...durations }));
+        }
       }
     } catch (err) {
       console.error("Erro ao buscar vídeos do artista:", err);
@@ -666,7 +708,7 @@ export default function Page() {
                               })}
                             </span>
                             <div className="flex justify-end text-[#b3b3b3] text-sm">
-                              3:45
+                              {formatDuration(videoDurations[item?.contentDetails?.videoId])}
                             </div>
                           </div>
                         );
@@ -749,7 +791,7 @@ export default function Page() {
                               </div>
                               <div className="flex items-center gap-8">
                                 <span className="text-[#b3b3b3] text-sm hidden md:block">1.234.567</span>
-                                <span className="text-[#b3b3b3] text-sm mr-4">3:24</span>
+                                <span className="text-[#b3b3b3] text-sm mr-4">{formatDuration(videoDurations[item?.id?.videoId])}</span>
                               </div>
                             </div>
                           );
