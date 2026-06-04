@@ -668,10 +668,13 @@ export default function Page() {
                         const track = formatTrack(item);
                         const isCurrent = currentTrack?.id === track.id;
                         return (
-                          <div
+                          <button
                             key={item.id}
+                            type="button"
+                            // Usar <button> evita o comportamento de "2 cliques" em alguns browsers mobile.
+                            // Mantemos o play no onClick (evita disparar durante scroll) e o botão ocupa a linha inteira.
                             onClick={() => playTrack(track, playlistTracks.map(formatTrack))}
-                            className="grid grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center cursor-pointer"
+                            className="grid w-full bg-transparent border-0 grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center cursor-pointer text-left touch-manipulation"
                           >
                             <span className={`text-[#b3b3b3] group-hover:text-white text-sm ${isCurrent ? 'text-[#1ed760]' : ''}`}>
                               {isCurrent && isPlaying ? (
@@ -710,7 +713,7 @@ export default function Page() {
                             <div className="flex justify-end text-[#b3b3b3] text-sm">
                               {formatDuration(videoDurations[item?.contentDetails?.videoId])}
                             </div>
-                          </div>
+                          </button>
                         );
                       })
                     )}
@@ -766,10 +769,11 @@ export default function Page() {
                           const track = formatTrack(item);
                           const isCurrent = currentTrack?.id === track.id;
                           return (
-                            <div
+                            <button
                               key={track.id}
+                              type="button"
                               onClick={() => playTrack(track, artistVideos.map(formatTrack))}
-                              className="flex items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors cursor-pointer"
+                              className="flex w-full bg-transparent border-0 items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors cursor-pointer text-left touch-manipulation"
                             >
                               <div className="flex items-center gap-4 flex-1 min-w-0">
                                 <span className={`w-4 text-center text-sm ${isCurrent ? 'text-[#1ed760]' : 'text-[#b3b3b3] group-hover:text-white'}`}>
@@ -793,7 +797,7 @@ export default function Page() {
                                 <span className="text-[#b3b3b3] text-sm hidden md:block">1.234.567</span>
                                 <span className="text-[#b3b3b3] text-sm mr-4">{formatDuration(videoDurations[item?.id?.videoId])}</span>
                               </div>
-                            </div>
+                            </button>
                           );
                         })
                       )}
