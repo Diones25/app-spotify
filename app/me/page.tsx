@@ -4,7 +4,7 @@ import { authClient } from "@/lib/auth-client";
 import { useEffect, useState, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
-import { Bell, User, ChevronLeft, ChevronRight, Settings, Clock, Play, MoreHorizontal, Download, UserPlus, Pause } from "lucide-react";
+import { User, Settings, Clock, Play, MoreHorizontal, Download, UserPlus, Pause } from "lucide-react";
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
 import PlayerMusic from "@/components/PlayerMusic";
@@ -632,7 +632,14 @@ export default function Page() {
                       onClick={() => {
                         if (playlistTracks.length > 0) {
                           const tracks = playlistTracks.map(formatTrack);
-                          playTrack(tracks[0], tracks);
+                          const firstTrack = tracks[0];
+                          // Se a primeira música da playlist está tocando, fazer toggle play/pause
+                          if (currentTrack?.id === firstTrack.id) {
+                            togglePlay();
+                          } else {
+                            // Caso contrário, tocar a primeira música
+                            playTrack(firstTrack, tracks);
+                          }
                         }
                       }}
                       className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
@@ -673,7 +680,15 @@ export default function Page() {
                             type="button"
                             // Usar <button> evita o comportamento de "2 cliques" em alguns browsers mobile.
                             // Mantemos o play no onClick (evita disparar durante scroll) e o botão ocupa a linha inteira.
-                            onClick={() => playTrack(track, playlistTracks.map(formatTrack))}
+                            onClick={() => {
+                              // Se a música clicada já está tocando, fazer toggle play/pause
+                              if (isCurrent) {
+                                togglePlay();
+                              } else {
+                                // Caso contrário, tocar a nova música
+                                playTrack(track, playlistTracks.map(formatTrack));
+                              }
+                            }}
                             className="grid w-full bg-transparent border-0 grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center cursor-pointer text-left touch-manipulation"
                           >
                             <span className={`text-[#b3b3b3] group-hover:text-white text-sm ${isCurrent ? 'text-[#1ed760]' : ''}`}>
@@ -742,7 +757,14 @@ export default function Page() {
                       onClick={() => {
                         if (artistVideos.length > 0) {
                           const tracks = artistVideos.map(formatTrack);
-                          playTrack(tracks[0], tracks);
+                          const firstTrack = tracks[0];
+                          // Se a primeira música do artista está tocando, fazer toggle play/pause
+                          if (currentTrack?.id === firstTrack.id) {
+                            togglePlay();
+                          } else {
+                            // Caso contrário, tocar a primeira música
+                            playTrack(firstTrack, tracks);
+                          }
                         }
                       }}
                       className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
@@ -772,7 +794,15 @@ export default function Page() {
                             <button
                               key={track.id}
                               type="button"
-                              onClick={() => playTrack(track, artistVideos.map(formatTrack))}
+                              onClick={() => {
+                                // Se a música clicada já está tocando, fazer toggle play/pause
+                                if (isCurrent) {
+                                  togglePlay();
+                                } else {
+                                  // Caso contrário, tocar a nova música
+                                  playTrack(track, artistVideos.map(formatTrack));
+                                }
+                              }}
                               className="flex w-full bg-transparent border-0 items-center justify-between p-2 rounded-md hover:bg-white/10 group transition-colors cursor-pointer text-left touch-manipulation"
                             >
                               <div className="flex items-center gap-4 flex-1 min-w-0">
