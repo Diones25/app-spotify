@@ -16,6 +16,8 @@ interface PlayerMusicProps {
   onSeek: (value: number) => void;
   volume: number;
   onVolumeChange: (value: number) => void;
+  isRepeat: boolean;
+  onToggleRepeat: () => void;
 }
 
 export default function PlayerMusic({
@@ -28,7 +30,9 @@ export default function PlayerMusic({
   duration,
   onSeek,
   volume,
-  onVolumeChange
+  onVolumeChange,
+  isRepeat,
+  onToggleRepeat
 }: PlayerMusicProps) {
   
   const formatTime = (seconds: number) => {
@@ -88,8 +92,17 @@ export default function PlayerMusic({
           >
             <FontAwesomeIcon icon={faStepForward} className="text-xl" />
           </button>
-          <button className="text-[#b3b3b3] hover:text-white transition-colors">
+          <button
+            onClick={onToggleRepeat}
+            className={`${isRepeat ? 'text-[#1ed760]' : 'text-[#b3b3b3]'} hover:text-white transition-colors relative`}
+            title={isRepeat ? 'Desativar repetição' : 'Ativar repetição'}
+          >
             <FontAwesomeIcon icon={faRepeat} className="text-sm" />
+            {isRepeat && (
+              <span className="absolute -top-1 -right-1.5 text-[8px] font-bold text-[#1ed760]">
+                1
+              </span>
+            )}
           </button>
         </div>
 

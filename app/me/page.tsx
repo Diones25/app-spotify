@@ -41,9 +41,11 @@ export default function Page() {
   const [played, setPlayed] = useState(0); // 0 a 1
   const [duration, setDuration] = useState(0); // em segundos
   const [volume, setVolume] = useState(1);
+  const [isRepeat, setIsRepeat] = useState(false);
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const queueRef = useRef<Track[]>([]);
   const queueIndexRef = useRef(0);
+  const isRepeatRef = useRef(false);
   const ytContainerRef = useRef<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<any>(null);
   const [ytApiReady, setYtApiReady] = useState(false);
@@ -57,6 +59,10 @@ export default function Page() {
   useEffect(() => {
     queueIndexRef.current = queueIndex;
   }, [queueIndex]);
+
+  useEffect(() => {
+    isRepeatRef.current = isRepeat;
+  }, [isRepeat]);
 
   const skipNext = () => {
     const q = queueRef.current;
@@ -155,7 +161,12 @@ export default function Page() {
             setIsPlaying(false);
           }
           if (state === (window as any).YT.PlayerState.ENDED) {
-            skipNext();
+            if (isRepeatRef.current) {
+              player.seekTo(0, true);
+              player.playVideo();
+            } else {
+              skipNext();
+            }
           }
         },
         onError: (event: any) => {
@@ -322,6 +333,10 @@ export default function Page() {
   const handleVolumeChange = (nextVolume: number) => {
     const clamped = Math.max(0, Math.min(1, nextVolume));
     setVolume(clamped);
+  };
+
+  const toggleRepeat = () => {
+    setIsRepeat(!isRepeat);
   };
 
   const spotifyColors = [
@@ -909,6 +924,8 @@ export default function Page() {
         onSeek={handleSeek}
         volume={volume}
         onVolumeChange={handleVolumeChange}
+        isRepeat={isRepeat}
+        onToggleRepeat={toggleRepeat}
       />
     </>
   );
