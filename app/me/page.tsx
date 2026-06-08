@@ -48,6 +48,7 @@ export default function Page() {
   const ytPlayerRef = useRef<any>(null);
   const [ytApiReady, setYtApiReady] = useState(false);
   const fetchedForUserId = useRef<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     queueRef.current = queue;
@@ -238,6 +239,16 @@ export default function Page() {
     timer = setInterval(tick, 250);
     return () => clearInterval(timer);
   }, [currentTrack?.id]);
+
+  useEffect(() => {
+    if (!currentTrack) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const element = container.querySelector(`[data-track-id="${CSS.escape(currentTrack.id)}"]`) as HTMLElement | null;
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [currentTrack]);
 
   const formatTrack = (item: any): Track => {
     // Para Playlist Items
@@ -519,7 +530,7 @@ export default function Page() {
           <Header setView={setView} />
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
             {view === "home" ? (
               <>
                 {/* Banner de Perfil Estilo Spotify */}
@@ -678,6 +689,7 @@ export default function Page() {
                           <button
                             key={item.id}
                             type="button"
+                            data-track-id={track.id}
                             // Usar <button> evita o comportamento de "2 cliques" em alguns browsers mobile.
                             // Mantemos o play no onClick (evita disparar durante scroll) e o botão ocupa a linha inteira.
                             onClick={() => {
@@ -794,6 +806,7 @@ export default function Page() {
                             <button
                               key={track.id}
                               type="button"
+                              data-track-id={track.id}
                               onClick={() => {
                                 // Se a música clicada já está tocando, fazer toggle play/pause
                                 if (isCurrent) {
