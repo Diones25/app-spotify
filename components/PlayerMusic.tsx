@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlay, faPause, faStepForward, faStepBackward, faVolumeHigh, faShuffle, faRepeat } from '@fortawesome/free-solid-svg-icons'
+import { faPlay, faPause, faStepForward, faStepBackward, faVolumeHigh, faShuffle, faRepeat, faVideo } from '@fortawesome/free-solid-svg-icons'
 
 interface PlayerMusicProps {
   currentTrack: {
@@ -18,6 +18,9 @@ interface PlayerMusicProps {
   onVolumeChange: (value: number) => void;
   isRepeat: boolean;
   onToggleRepeat: () => void;
+  isVideoSidebarOpen: boolean;
+  onToggleVideoSidebar: () => void;
+  hasVideo: boolean;
 }
 
 export default function PlayerMusic({
@@ -32,7 +35,10 @@ export default function PlayerMusic({
   volume,
   onVolumeChange,
   isRepeat,
-  onToggleRepeat
+  onToggleRepeat,
+  isVideoSidebarOpen,
+  onToggleVideoSidebar,
+  hasVideo
 }: PlayerMusicProps) {
   
   const formatTime = (seconds: number) => {
@@ -73,6 +79,14 @@ export default function PlayerMusic({
         <div className="flex items-center gap-6">
           <button className="text-[#b3b3b3] hover:text-white transition-colors">
             <FontAwesomeIcon icon={faShuffle} className="text-sm" />
+          </button>
+          <button
+            onClick={onToggleVideoSidebar}
+            disabled={!hasVideo}
+            className={`${isVideoSidebarOpen ? 'text-[#1ed760]' : hasVideo ? 'text-[#b3b3b3]' : 'text-[#535353]'} hover:text-white transition-colors disabled:cursor-not-allowed`}
+            title={hasVideo ? (isVideoSidebarOpen ? 'Fechar vídeo' : 'Abrir vídeo') : 'Vídeo indisponível'}
+          >
+            <FontAwesomeIcon icon={faVideo} className="text-sm" />
           </button>
           <button 
             onClick={onPrevious}

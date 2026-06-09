@@ -8,6 +8,7 @@ import { User, Settings, Clock, Play, MoreHorizontal, Download, UserPlus, Pause 
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
 import PlayerMusic from "@/components/PlayerMusic";
+import SidebarVideo from "@/components/SidebarVideo";
 
 interface Track {
   id: string;
@@ -42,6 +43,10 @@ export default function Page() {
   const [duration, setDuration] = useState(0); // em segundos
   const [volume, setVolume] = useState(1);
   const [isRepeat, setIsRepeat] = useState(false);
+  const [isVideoSidebarOpen, setIsVideoSidebarOpen] = useState(false);
+  const [videoDetails, setVideoDetails] = useState<any>(null);
+  const [videoSidebarLoading, setVideoSidebarLoading] = useState(false);
+  const [sidebarStartTime, setSidebarStartTime] = useState(0);
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const queueRef = useRef<Track[]>([]);
   const queueIndexRef = useRef(0);
@@ -51,6 +56,9 @@ export default function Page() {
   const [ytApiReady, setYtApiReady] = useState(false);
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const sidebarVideoContainerRef = useRef<HTMLDivElement>(null);
+  const sidebarPlayerRef = useRef<any>(null);
+  const syncIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     queueRef.current = queue;
@@ -261,6 +269,11 @@ export default function Page() {
     }
   }, [currentTrack]);
 
+  useEffect(() => {
+    if (!isVideoSidebarOpen || !currentTrack) return;
+    fetchVideoDetails(currentTrack.id);
+  }, [currentTrack?.id, isVideoSidebarOpen]);
+
   const formatTrack = (item: any): Track => {
     // Para Playlist Items
     if (item.kind === 'youtube#playlistItem' || item.contentDetails?.videoId) {
@@ -337,6 +350,113 @@ export default function Page() {
 
   const toggleRepeat = () => {
     setIsRepeat(!isRepeat);
+  };
+
+  const fetchVideoDetails = async (videoId: string) => {
+    if (!youtubeToken) return;
+    setVideoSidebarLoading(true);
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}`,
+        { headers: { Authorization: `Bearer ${youtubeToken}` } }
+      );
+      const data = await res.json();
+      if (data.items && data.items.length > 0) {
+        const v = data.items[0];
+        setVideoDetails({
+          title: v.snippet.title,
+          channelTitle: v.snippet.channelTitle,
+          description: v.snippet.description,
+          viewCount: parseInt(v.statistics?.viewCount || "0").toLocaleString('pt-BR'),
+          likeCount: parseInt(v.statistics?.likeCount || "0").toLocaleString('pt-BR'),
+          publishedAt: v.snippet.publishedAt,
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao buscar detalhes do vídeo:", err);
+    } finally {
+      setVideoSidebarLoading(false);
+    }
+  };
+
+  const toggleVideoSidebar = () => {
+    if (!isVideoSidebarOpen) {
+      const player = ytPlayerRef.current;
+      if (player && player.getCurrentTime) {
+        setSidebarStartTime(player.getCurrentTime());
+      }
+      if (currentTrack) {
+        fetchVideoDetails(currentTrack.id);
+      }
+    }
+    setIsVideoSidebarOpen(!isVideoSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (!isVideoSidebarOpen || !currentTrack || !sidebarVideoContainerRef.current) {
+      if (sidebarPlayerRef.current) {
+        sidebarPlayerRef.current.destroy();
+        sidebarPlayerRef.current = null;
+      }
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const container = sidebarVideoContainerRef.current;
+    container.innerHTML = "";
+
+    const sidePlayer = new (window as any).YT.Player(container, {
+      height: "100%",
+      width: "100%",
+      videoId: currentTrack.id,
+      playerVars: {
+        autoplay: 1,
+        mute: 1,
+        controls: 1,
+        rel: 0,
+        modestbranding: 1,
+        playsinline: 1,
+        start: Math.floor(sidebarStartTime),
+      },
+    });
+    sidebarPlayerRef.current = sidePlayer;
+
+    syncIntervalRef.current = setInterval(() => {
+      const mainPlayer = ytPlayerRef.current;
+      const sidePlayer2 = sidebarPlayerRef.current;
+      if (!mainPlayer || !sidePlayer2) return;
+      try {
+        const mainTime = mainPlayer.getCurrentTime?.() || 0;
+        const sideTime = sidePlayer2.getCurrentTime?.() || 0;
+        if (Math.abs(mainTime - sideTime) > 1.5) {
+          sidePlayer2.seekTo(mainTime, true);
+        }
+      } catch {}
+    }, 5000);
+
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+      if (sidebarPlayerRef.current) {
+        sidebarPlayerRef.current.destroy();
+        sidebarPlayerRef.current = null;
+      }
+    };
+  }, [isVideoSidebarOpen, currentTrack?.id, sidebarStartTime]);
+
+  const getPlaylistName = (): string | undefined => {
+    if (view === "playlist-detail" && selectedPlaylist) {
+      return selectedPlaylist.snippet.title;
+    }
+    if (view === "artist-detail" && selectedArtist) {
+      return selectedArtist.snippet.title;
+    }
+    return undefined;
   };
 
   const spotifyColors = [
@@ -540,7 +660,7 @@ export default function Page() {
         <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
 
         {/* Conteúdo Principal */}
-        <main className="h-187.5 flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative">
+        <main className={`h-187.5 flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative transition-all duration-300 ${isVideoSidebarOpen ? '' : ''}`}>
           {/* Header Superior */}
           <Header setView={setView} />
 
@@ -904,6 +1024,19 @@ export default function Page() {
             )}
           </div>
         </main>
+
+        {/* Video Sidebar */}
+        <SidebarVideo
+          isOpen={isVideoSidebarOpen}
+          onClose={() => setIsVideoSidebarOpen(false)}
+          videoId={currentTrack?.id || ""}
+          startTime={sidebarStartTime}
+          videoDetails={videoDetails}
+          currentTrack={currentTrack}
+          playlistName={getPlaylistName()}
+          loading={videoSidebarLoading}
+          videoContainerRef={sidebarVideoContainerRef}
+        />
       </div>
 
       <div
@@ -926,6 +1059,9 @@ export default function Page() {
         onVolumeChange={handleVolumeChange}
         isRepeat={isRepeat}
         onToggleRepeat={toggleRepeat}
+        isVideoSidebarOpen={isVideoSidebarOpen}
+        onToggleVideoSidebar={toggleVideoSidebar}
+        hasVideo={!!currentTrack}
       />
     </>
   );
