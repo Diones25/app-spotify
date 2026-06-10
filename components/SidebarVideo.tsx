@@ -41,8 +41,6 @@ function formatTime(seconds: number): string {
 export default function SidebarVideo({
   isOpen,
   onClose,
-  videoId,
-  startTime,
   videoDetails,
   currentTrack,
   playlistName,
