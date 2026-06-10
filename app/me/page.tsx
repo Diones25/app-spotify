@@ -891,7 +891,7 @@ export default function Page() {
                               />
                               <div className="flex flex-col min-w-0">
                                 <span className={`font-medium truncate group-hover:text-white ${isCurrent ? 'text-[#1ed760]' : 'text-white'}`}>
-                                  {track.title}
+                                  {track.title.slice(0, 50)}
                                 </span>
                                 <span className="text-[#b3b3b3] text-xs truncate">
                                   {track.artist}
