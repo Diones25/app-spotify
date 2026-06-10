@@ -77,9 +77,6 @@ export default function PlayerMusic({
       {/* Controles de Reprodução */}
       <div className="flex flex-col items-center max-w-[40%] w-full gap-2">
         <div className="flex items-center gap-6">
-          <button className="text-[#b3b3b3] hover:text-white transition-colors">
-            <FontAwesomeIcon icon={faShuffle} className="text-sm" />
-          </button>
           <button
             onClick={onToggleVideoSidebar}
             disabled={!hasVideo}
