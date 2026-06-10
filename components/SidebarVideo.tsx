@@ -64,7 +64,7 @@ export default function SidebarVideo({
   };
 
   return (
-    <aside className="w-105 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-hidden">
+    <aside className="w-105 pt-2 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 shrink-0">
         <h2 className="text-white font-bold text-base">{playlistName}</h2>
