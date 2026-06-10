@@ -827,7 +827,7 @@ export default function Page() {
                           }
                         }
                       }}
-                      className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg"
+                      className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg cursor-pointer"
                     >
                       {currentTrack && isPlaying && queue.some(t => t.id === formatTrack(playlistTracks[0]).id) ? (
                         <Pause fill="black" size={28} />
@@ -835,9 +835,6 @@ export default function Page() {
                         <Play fill="black" size={28} />
                       )}
                     </button>
-                    <button className="text-[#b3b3b3] hover:text-white transition-colors"><Download size={28} /></button>
-                    <button className="text-[#b3b3b3] hover:text-white transition-colors"><UserPlus size={28} /></button>
-                    <button className="text-[#b3b3b3] hover:text-white transition-colors"><MoreHorizontal size={28} /></button>
                   </div>
 
                   {/* Cabeçalho da Tabela */}
