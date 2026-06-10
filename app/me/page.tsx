@@ -483,7 +483,7 @@ export default function Page() {
         const d = player.getDuration() || 0;
         if (d > 0) setSidebarDuration(d);
       } catch {}
-    }, 250);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [isVideoSidebarOpen]);
