@@ -42,10 +42,10 @@ export default function SidebarVideo({
   if (!isOpen) return null;
 
   return (
-    <aside className="w-[420px] shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-hidden">
+    <aside className="w-105 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 shrink-0">
-        <h2 className="text-white font-bold text-base">Em reprodução</h2>
+        <h2 className="text-white font-bold text-base">{playlistName}</h2>
         <div className="flex items-center gap-2">
           <button className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10">
             <Maximize2 size={16} />
@@ -60,10 +60,12 @@ export default function SidebarVideo({
       </div>
 
       {/* Player de Vídeo - container para YT.Player API */}
-      <div
-        ref={videoContainerRef}
-        className="relative w-full aspect-video bg-black shrink-0"
-      />
+      <div className="flex items-center justify-center">
+        <div
+          ref={videoContainerRef}
+          className="relative w-97.5 h-55 rounded-lg p-4 aspect-video bg-black shrink-0"
+        />
+      </div>
 
       {/* Informações da Música */}
       <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
