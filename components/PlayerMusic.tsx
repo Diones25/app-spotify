@@ -80,37 +80,37 @@ export default function PlayerMusic({
           <button
             onClick={onToggleVideoSidebar}
             disabled={!hasVideo}
-            className={`${isVideoSidebarOpen ? 'text-[#1ed760]' : hasVideo ? 'text-[#b3b3b3]' : 'text-[#535353]'} hover:text-white transition-colors disabled:cursor-not-allowed`}
+            className={`${isVideoSidebarOpen ? 'text-[#1ed760]' : hasVideo ? 'text-[#b3b3b3]' : 'text-[#535353]'} hover:[#1ed760] transition-colors disabled:cursor-not-allowed cursor-pointer`}
             title={hasVideo ? (isVideoSidebarOpen ? 'Fechar vídeo' : 'Abrir vídeo') : 'Vídeo indisponível'}
           >
-            <FontAwesomeIcon icon={faVideo} className="text-sm" />
+            <FontAwesomeIcon icon={faVideo} className="text-[18px]" />
           </button>
           <button 
             onClick={onPrevious}
-            className="text-[#b3b3b3] hover:text-white transition-colors"
+            className="text-[#b3b3b3] hover:text-white transition-colors cursor-pointer"
           >
             <FontAwesomeIcon icon={faStepBackward} className="text-xl" />
           </button>
           <button 
             onClick={onTogglePlay}
-            className="bg-white w-8 h-8 flex items-center justify-center rounded-full hover:scale-105 transition-transform"
+            className="bg-white w-8 h-8 flex items-center justify-center rounded-full hover:scale-105 transition-transform cursor-pointer"
           >
             <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} className="text-black text-sm" />
           </button>
           <button 
             onClick={onNext}
-            className="text-[#b3b3b3] hover:text-white transition-colors"
+            className="text-[#b3b3b3] hover:text-white transition-colors cursor-pointer"
           >
             <FontAwesomeIcon icon={faStepForward} className="text-xl" />
           </button>
           <button
             onClick={onToggleRepeat}
-            className={`${isRepeat ? 'text-[#1ed760]' : 'text-[#b3b3b3]'} hover:text-white transition-colors relative`}
+            className={`${isRepeat ? 'text-[#1ed760]' : 'text-[#b3b3b3]'} hover:text-white transition-colors relative cursor-pointer`}
             title={isRepeat ? 'Desativar repetição' : 'Ativar repetição'}
           >
-            <FontAwesomeIcon icon={faRepeat} className="text-sm" />
+            <FontAwesomeIcon icon={faRepeat} className="text-[18px]" />
             {isRepeat && (
-              <span className="absolute -top-1 -right-1.5 text-[8px] font-bold text-[#1ed760]">
+              <span className="absolute top-1.25 right-2 text-[8px] font-bold text-[#1ed760]">
                 1
               </span>
             )}
