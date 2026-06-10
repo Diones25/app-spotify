@@ -241,6 +241,16 @@ export default function Page() {
         player.pauseVideo?.();
       }
     } catch {}
+    const sidePlayer = sidebarPlayerRef.current;
+    if (sidePlayer) {
+      try {
+        if (isPlaying) {
+          sidePlayer.playVideo?.();
+        } else {
+          sidePlayer.pauseVideo?.();
+        }
+      } catch {}
+    }
   }, [isPlaying, currentTrack?.id]);
 
   useEffect(() => {
@@ -415,7 +425,7 @@ export default function Page() {
       width: "100%",
       videoId: currentTrack.id,
       playerVars: {
-        autoplay: 1,
+        autoplay: isPlaying ? 1 : 0,
         mute: 1,
         controls: 0,
         rel: 0,
@@ -435,6 +445,13 @@ export default function Page() {
         const sideTime = sidePlayer2.getCurrentTime?.() || 0;
         if (Math.abs(mainTime - sideTime) > 1.5) {
           sidePlayer2.seekTo(mainTime, true);
+        }
+        const mainState = mainPlayer.getPlayerState?.();
+        const sideState = sidePlayer2.getPlayerState?.();
+        if (mainState === (window as any).YT?.PlayerState?.PLAYING && sideState !== (window as any).YT?.PlayerState?.PLAYING) {
+          sidePlayer2.playVideo?.();
+        } else if (mainState !== (window as any).YT?.PlayerState?.PLAYING && sideState === (window as any).YT?.PlayerState?.PLAYING) {
+          sidePlayer2.pauseVideo?.();
         }
       } catch {}
     }, 5000);
