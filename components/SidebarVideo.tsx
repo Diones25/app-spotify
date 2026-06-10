@@ -26,6 +26,16 @@ interface SidebarVideoProps {
   playlistName?: string;
   loading?: boolean;
   videoContainerRef: RefObject<HTMLDivElement | null>;
+  sidebarCurrentTime: number;
+  sidebarDuration: number;
+  onSidebarSeek: (time: number) => void;
+}
+
+function formatTime(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export default function SidebarVideo({
@@ -37,9 +47,21 @@ export default function SidebarVideo({
   currentTrack,
   playlistName,
   loading,
-  videoContainerRef
+  videoContainerRef,
+  sidebarCurrentTime,
+  sidebarDuration,
+  onSidebarSeek
 }: SidebarVideoProps) {
   if (!isOpen) return null;
+
+  const progress = sidebarDuration > 0 ? sidebarCurrentTime / sidebarDuration : 0;
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    onSidebarSeek(pct * sidebarDuration);
+  };
 
   return (
     <aside className="w-105 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-hidden">
@@ -60,11 +82,30 @@ export default function SidebarVideo({
       </div>
 
       {/* Player de Vídeo - container para YT.Player API */}
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center px-4">
         <div
           ref={videoContainerRef}
-          className="relative w-97.5 h-55 rounded-lg p-4 aspect-video bg-black shrink-0"
+          className="relative w-full aspect-video bg-black rounded-lg overflow-hidden"
         />
+      </div>
+
+      {/* Progress Bar e Timer */}
+      <div className="flex items-center gap-2 px-6 pt-2 pb-1">
+        <span className="text-[#b3b3b3] text-xs tabular-nums min-w-[32px] text-right">
+          {formatTime(sidebarCurrentTime)}
+        </span>
+        <div
+          className="flex-1 h-1 bg-[#4d4d4d] rounded-full cursor-pointer group relative"
+          onClick={handleSeek}
+        >
+          <div
+            className="h-full bg-white rounded-full group-hover:bg-green-500 transition-colors"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+        <span className="text-[#b3b3b3] text-xs tabular-nums min-w-[32px]">
+          {formatTime(sidebarDuration)}
+        </span>
       </div>
 
       {/* Informações da Música */}

@@ -47,6 +47,8 @@ export default function Page() {
   const [videoDetails, setVideoDetails] = useState<any>(null);
   const [videoSidebarLoading, setVideoSidebarLoading] = useState(false);
   const [sidebarStartTime, setSidebarStartTime] = useState(0);
+  const [sidebarCurrentTime, setSidebarCurrentTime] = useState(0);
+  const [sidebarDuration, setSidebarDuration] = useState(0);
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const queueRef = useRef<Track[]>([]);
   const queueIndexRef = useRef(0);
@@ -415,7 +417,7 @@ export default function Page() {
       playerVars: {
         autoplay: 1,
         mute: 1,
-        controls: 1,
+        controls: 0,
         rel: 0,
         modestbranding: 1,
         playsinline: 1,
@@ -448,6 +450,26 @@ export default function Page() {
       }
     };
   }, [isVideoSidebarOpen, currentTrack?.id, sidebarStartTime]);
+
+  useEffect(() => {
+    if (!isVideoSidebarOpen) {
+      setSidebarCurrentTime(0);
+      setSidebarDuration(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const player = sidebarPlayerRef.current;
+      if (!player?.getCurrentTime) return;
+      try {
+        setSidebarCurrentTime(player.getCurrentTime() || 0);
+        const d = player.getDuration() || 0;
+        if (d > 0) setSidebarDuration(d);
+      } catch {}
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [isVideoSidebarOpen]);
 
   const getPlaylistName = (): string | undefined => {
     if (view === "playlist-detail" && selectedPlaylist) {
@@ -1036,6 +1058,14 @@ export default function Page() {
           playlistName={getPlaylistName()}
           loading={videoSidebarLoading}
           videoContainerRef={sidebarVideoContainerRef}
+          sidebarCurrentTime={sidebarCurrentTime}
+          sidebarDuration={sidebarDuration}
+          onSidebarSeek={(time) => {
+            const player = sidebarPlayerRef.current;
+            if (player?.seekTo) {
+              player.seekTo(time, true);
+            }
+          }}
         />
       </div>
 
