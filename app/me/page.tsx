@@ -454,7 +454,7 @@ export default function Page() {
           sidePlayer2.pauseVideo?.();
         }
       } catch {}
-    }, 5000);
+    }, 250);
 
     return () => {
       if (syncIntervalRef.current) {
