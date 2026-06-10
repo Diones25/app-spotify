@@ -46,21 +46,15 @@ export default function Page() {
   const [isVideoSidebarOpen, setIsVideoSidebarOpen] = useState(false);
   const [videoDetails, setVideoDetails] = useState<any>(null);
   const [videoSidebarLoading, setVideoSidebarLoading] = useState(false);
-  const [sidebarStartTime, setSidebarStartTime] = useState(0);
-  const [sidebarCurrentTime, setSidebarCurrentTime] = useState(0);
-  const [sidebarDuration, setSidebarDuration] = useState(0);
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const queueRef = useRef<Track[]>([]);
   const queueIndexRef = useRef(0);
   const isRepeatRef = useRef(false);
-  const ytContainerRef = useRef<HTMLDivElement | null>(null);
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<any>(null);
   const [ytApiReady, setYtApiReady] = useState(false);
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const sidebarVideoContainerRef = useRef<HTMLDivElement>(null);
-  const sidebarPlayerRef = useRef<any>(null);
-  const syncIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     queueRef.current = queue;
@@ -137,12 +131,12 @@ export default function Page() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!ytApiReady) return;
-    if (!ytContainerRef.current) return;
+    if (!playerContainerRef.current) return;
     if (ytPlayerRef.current) return;
 
-    ytPlayerRef.current = new (window as any).YT.Player(ytContainerRef.current, {
-      height: "180",
-      width: "320",
+    ytPlayerRef.current = new (window as any).YT.Player(playerContainerRef.current, {
+      height: "100%",
+      width: "100%",
       videoId: "",
       playerVars: {
         autoplay: 0,
@@ -241,16 +235,6 @@ export default function Page() {
         player.pauseVideo?.();
       }
     } catch {}
-    const sidePlayer = sidebarPlayerRef.current;
-    if (sidePlayer) {
-      try {
-        if (isPlaying) {
-          sidePlayer.playVideo?.();
-        } else {
-          sidePlayer.pauseVideo?.();
-        }
-      } catch {}
-    }
   }, [isPlaying, currentTrack?.id]);
 
   useEffect(() => {
@@ -392,101 +376,11 @@ export default function Page() {
   };
 
   const toggleVideoSidebar = () => {
-    if (!isVideoSidebarOpen) {
-      const player = ytPlayerRef.current;
-      if (player && player.getCurrentTime) {
-        setSidebarStartTime(player.getCurrentTime());
-      }
-      if (currentTrack) {
-        fetchVideoDetails(currentTrack.id);
-      }
+    if (!isVideoSidebarOpen && currentTrack) {
+      fetchVideoDetails(currentTrack.id);
     }
     setIsVideoSidebarOpen(!isVideoSidebarOpen);
   };
-
-  useEffect(() => {
-    if (!isVideoSidebarOpen || !currentTrack || !sidebarVideoContainerRef.current) {
-      if (sidebarPlayerRef.current) {
-        sidebarPlayerRef.current.destroy();
-        sidebarPlayerRef.current = null;
-      }
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-      return;
-    }
-
-    const container = sidebarVideoContainerRef.current;
-    container.innerHTML = "";
-
-    const sidePlayer = new (window as any).YT.Player(container, {
-      height: "100%",
-      width: "100%",
-      videoId: currentTrack.id,
-      playerVars: {
-        autoplay: isPlaying ? 1 : 0,
-        mute: 1,
-        controls: 0,
-        rel: 0,
-        modestbranding: 1,
-        playsinline: 1,
-        start: Math.floor(sidebarStartTime),
-      },
-    });
-    sidebarPlayerRef.current = sidePlayer;
-
-    syncIntervalRef.current = setInterval(() => {
-      const mainPlayer = ytPlayerRef.current;
-      const sidePlayer2 = sidebarPlayerRef.current;
-      if (!mainPlayer || !sidePlayer2) return;
-      try {
-        const mainTime = mainPlayer.getCurrentTime?.() || 0;
-        const sideTime = sidePlayer2.getCurrentTime?.() || 0;
-        if (Math.abs(mainTime - sideTime) > 1.5) {
-          sidePlayer2.seekTo(mainTime, true);
-        }
-        const mainState = mainPlayer.getPlayerState?.();
-        const sideState = sidePlayer2.getPlayerState?.();
-        if (mainState === (window as any).YT?.PlayerState?.PLAYING && sideState !== (window as any).YT?.PlayerState?.PLAYING) {
-          sidePlayer2.playVideo?.();
-        } else if (mainState !== (window as any).YT?.PlayerState?.PLAYING && sideState === (window as any).YT?.PlayerState?.PLAYING) {
-          sidePlayer2.pauseVideo?.();
-        }
-      } catch {}
-    }, 250);
-
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-      if (sidebarPlayerRef.current) {
-        sidebarPlayerRef.current.destroy();
-        sidebarPlayerRef.current = null;
-      }
-    };
-  }, [isVideoSidebarOpen, currentTrack?.id, sidebarStartTime]);
-
-  useEffect(() => {
-    if (!isVideoSidebarOpen) {
-      setSidebarCurrentTime(0);
-      setSidebarDuration(0);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const player = sidebarPlayerRef.current;
-      if (!player?.getCurrentTime) return;
-      try {
-        setSidebarCurrentTime(player.getCurrentTime() || 0);
-        const d = player.getDuration() || 0;
-        if (d > 0) setSidebarDuration(d);
-      } catch {}
-    }, 250);
-
-    return () => clearInterval(interval);
-  }, [isVideoSidebarOpen]);
 
   const getPlaylistName = (): string | undefined => {
     if (view === "playlist-detail" && selectedPlaylist) {
@@ -1065,29 +959,21 @@ export default function Page() {
         <SidebarVideo
           isOpen={isVideoSidebarOpen}
           onClose={() => setIsVideoSidebarOpen(false)}
-          videoId={currentTrack?.id || ""}
-          startTime={sidebarStartTime}
           videoDetails={videoDetails}
           currentTrack={currentTrack}
           playlistName={getPlaylistName()}
           loading={videoSidebarLoading}
-          videoContainerRef={sidebarVideoContainerRef}
-          sidebarCurrentTime={sidebarCurrentTime}
-          sidebarDuration={sidebarDuration}
-          onSidebarSeek={(time) => {
-            const player = sidebarPlayerRef.current;
+          playerContainerRef={playerContainerRef}
+          currentTime={Math.floor(played * duration)}
+          duration={duration}
+          isPlaying={isPlaying}
+          onSeek={(time) => {
+            const player = ytPlayerRef.current;
             if (player?.seekTo) {
               player.seekTo(time, true);
             }
           }}
         />
-      </div>
-
-      <div
-        className="fixed -left-2499.75 top-0 w-[320px] h-45 overflow-hidden"
-        aria-hidden="true"
-      >
-        <div id="yt-player" ref={ytContainerRef} />
       </div>
 
       <PlayerMusic
