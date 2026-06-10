@@ -61,7 +61,7 @@ export default function SidebarVideo({
   return (
     <aside
       className={`${
-        isOpen ? "" : "fixed -left-[9999px]"
+        isOpen ? "" : "fixed -left-2499.75"
       } w-105 pt-2 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-hidden`}
     >
       {/* Header */}
