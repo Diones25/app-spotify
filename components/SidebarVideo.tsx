@@ -91,7 +91,7 @@ export default function SidebarVideo({
 
       {/* Progress Bar e Timer */}
       <div className="flex items-center gap-2 px-6 pt-2 pb-1">
-        <span className="text-[#b3b3b3] text-xs tabular-nums min-w-[32px] text-right">
+        <span className="text-[#b3b3b3] text-xs tabular-nums min-w-8 text-right">
           {formatTime(sidebarCurrentTime)}
         </span>
         <div
@@ -103,7 +103,7 @@ export default function SidebarVideo({
             style={{ width: `${progress * 100}%` }}
           />
         </div>
-        <span className="text-[#b3b3b3] text-xs tabular-nums min-w-[32px]">
+        <span className="text-[#b3b3b3] text-xs tabular-nums min-w-8">
           {formatTime(sidebarDuration)}
         </span>
       </div>
