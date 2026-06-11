@@ -853,7 +853,7 @@ export default function Page() {
                                 playTrack(track, playlistTracks.map(formatTrack));
                               }
                             }}
-                            className="grid w-full bg-transparent border-0 grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center cursor-pointer text-left touch-manipulation"
+                            className="grid w-full bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none grid-cols-[16px_4fr_3fr_2fr_80px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors group items-center cursor-pointer text-left touch-manipulation"
                           >
                             <span className={`text-[#b3b3b3] group-hover:text-white text-sm ${isCurrent ? 'text-[#1ed760]' : ''}`}>
                               {isCurrent && isPlaying ? (
