@@ -227,14 +227,8 @@ export default function Page() {
       player.loadVideoById({ videoId });
       player.setVolume(Math.round(volume * 100));
       player.unMute?.();
-      if (isPlaying) {
-        player.playVideo?.();
-        setTimeout(() => player.playVideo?.(), 0);
-      }
-      else player.pauseVideo?.();
     } catch (e) {
       console.error("Erro ao carregar vídeo:", e);
-      skipNext();
     }
   }, [currentTrack?.id]);
 
@@ -251,20 +245,6 @@ export default function Page() {
       }
     } catch {}
   }, [ytApiReady]);
-
-  useEffect(() => {
-    const player = ytPlayerRef.current;
-    if (!player) return;
-    if (!currentTrack) return;
-    try {
-      if (isPlaying) {
-        player.playVideo?.();
-        player.unMute?.();
-      } else {
-        player.pauseVideo?.();
-      }
-    } catch {}
-  }, [isPlaying, currentTrack?.id]);
 
   useEffect(() => {
     const player = ytPlayerRef.current;
