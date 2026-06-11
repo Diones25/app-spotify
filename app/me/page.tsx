@@ -1,6 +1,7 @@
 "use client"
 
 import { authClient } from "@/lib/auth-client";
+import { getYoutubeToken } from "@/lib/get-youtube-token";
 import { useEffect, useState, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
@@ -32,6 +33,7 @@ export default function Page() {
   const [playlistTracks, setPlaylistTracks] = useState<any[]>([]);
   const [artistVideos, setArtistVideos] = useState<any[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [randomColor, setRandomColor] = useState("from-red-600");
 
   // Estados de Reprodução
@@ -55,6 +57,33 @@ export default function Page() {
   const [ytApiReady, setYtApiReady] = useState(false);
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  async function fetchWithRetry(token: string, url: string): Promise<Response | null> {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.status === 401 || res.status === 403) {
+      const freshToken = await getYoutubeToken();
+      if (!freshToken) {
+        setError("Sessao expirada. Faca login novamente para acessar o YouTube.");
+        return null;
+      }
+      setYoutubeToken(freshToken);
+      const retryRes = await fetch(url, {
+        headers: { Authorization: `Bearer ${freshToken}` }
+      });
+      if (!retryRes.ok) {
+        setError("Falha ao acessar o YouTube. Tente novamente mais tarde.");
+        return null;
+      }
+      return retryRes;
+    }
+    if (!res.ok) {
+      setError("Erro ao carregar dados do YouTube.");
+      return null;
+    }
+    return res;
+  }
 
   useEffect(() => {
     queueRef.current = queue;
@@ -356,6 +385,29 @@ export default function Page() {
         `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}`,
         { headers: { Authorization: `Bearer ${youtubeToken}` } }
       );
+      if (res.status === 401 || res.status === 403) {
+        const freshToken = await getYoutubeToken();
+        if (!freshToken) return;
+        setYoutubeToken(freshToken);
+        const retryRes = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}`,
+          { headers: { Authorization: `Bearer ${freshToken}` } }
+        );
+        if (!retryRes.ok) return;
+        const retryData = await retryRes.json();
+        if (retryData.items && retryData.items.length > 0) {
+          const v = retryData.items[0];
+          setVideoDetails({
+            title: v.snippet.title,
+            channelTitle: v.snippet.channelTitle,
+            description: v.snippet.description,
+            viewCount: parseInt(v.statistics?.viewCount || "0").toLocaleString('pt-BR'),
+            likeCount: parseInt(v.statistics?.likeCount || "0").toLocaleString('pt-BR'),
+            publishedAt: v.snippet.publishedAt,
+          });
+        }
+        return;
+      }
       const data = await res.json();
       if (data.items && data.items.length > 0) {
         const v = data.items[0];
@@ -416,51 +468,42 @@ export default function Page() {
 
     async function fetchYouTubeData() {
       try {
-        const { data, error } = await authClient.getAccessToken({
-          providerId: "google",
-        });
+        setError(null);
 
-        if (data?.accessToken) {
-          setYoutubeToken(data.accessToken);
-
-          // Buscar Playlists
-          const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`, {
-            headers: { Authorization: `Bearer ${data.accessToken}` }
-          });
-
-          if (plRes.status === 401 || plRes.status === 403) {
-            throw new Error("Token expirado ou inválido");
-          }
-
-          const plData = await plRes.json();
-          setPlaylists(plData.items || []);
-
-          // Buscar Playlists
-          const plAllRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`, {
-            headers: { Authorization: `Bearer ${data.accessToken}` }
-          });
-          const plAllData = await plAllRes.json();
-          setAllPlaylists(plAllData.items || []);
-
-          // Buscar Inscrições (Artistas)
-          const subRes = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`, {
-            headers: { Authorization: `Bearer ${data.accessToken}` }
-          });
-          const subData = await subRes.json();
-          setSubscriptions(subData.items || []);
-
-          // Buscar todas as Inscrições (Artistas)
-          const subAllRes = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`, {
-            headers: { Authorization: `Bearer ${data.accessToken}` }
-          });
-          const subAllData = await subAllRes.json();
-          setAllSubscriptions(subAllData.items || []);
-        } else if (error) {
-          console.error("Erro ao recuperar access token:", error);
-          // Opcional: authClient.signOut();
+        const token = await getYoutubeToken();
+        if (!token) {
+          setError("Nao foi possivel conectar ao YouTube. Seu token de acesso pode estar expirado. Faca login novamente.");
+          return;
         }
+
+        setYoutubeToken(token);
+
+        // Buscar Playlists
+        const plRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
+        if (!plRes) return;
+        const plData = await plRes.json();
+        setPlaylists(plData.items || []);
+
+        // Buscar Playlists (todas)
+        const plAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
+        if (!plAllRes) return;
+        const plAllData = await plAllRes.json();
+        setAllPlaylists(plAllData.items || []);
+
+        // Buscar Inscrições (Artistas)
+        const subRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
+        if (!subRes) return;
+        const subData = await subRes.json();
+        setSubscriptions(subData.items || []);
+
+        // Buscar todas as Inscrições (Artistas)
+        const subAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
+        if (!subAllRes) return;
+        const subAllData = await subAllRes.json();
+        setAllSubscriptions(subAllData.items || []);
       } catch (err) {
         console.error("Erro ao buscar dados do YouTube:", err);
+        setError("Erro inesperado ao carregar dados do YouTube.");
       } finally {
         setLoading(false);
       }
@@ -480,46 +523,49 @@ export default function Page() {
     setRandomColor(color);
 
     try {
-      const { data } = await authClient.getAccessToken({
-        providerId: "google",
+      const token = await getYoutubeToken();
+      if (!token) {
+        setLoadingTracks(false);
+        setError("Token do YouTube expirado. Faca login novamente.");
+        return;
+      }
+
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlist.id}&maxResults=50`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      if (!res.ok) throw new Error("Erro ao buscar playlist");
+      const trackData = await res.json();
+      const items = trackData.items || [];
+      const videoIds = items
+        .map((it: any) => it?.contentDetails?.videoId)
+        .filter(Boolean);
 
-      if (data?.accessToken) {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlist.id}&maxResults=50`, {
-          headers: { Authorization: `Bearer ${data.accessToken}` }
+      if (videoIds.length === 0) {
+        setPlaylistTracks([]);
+        return;
+      }
+
+      const embeddable = new Set<string>();
+      const durations: Record<string, number> = {};
+      for (let i = 0; i < videoIds.length; i += 50) {
+        const chunk = videoIds.slice(i, i + 50);
+        const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${chunk.join(",")}`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const trackData = await res.json();
-        const items = trackData.items || [];
-        const videoIds = items
-          .map((it: any) => it?.contentDetails?.videoId)
-          .filter(Boolean);
-
-        if (videoIds.length === 0) {
-          setPlaylistTracks([]);
-          return;
-        }
-
-        const embeddable = new Set<string>();
-        const durations: Record<string, number> = {};
-        for (let i = 0; i < videoIds.length; i += 50) {
-          const chunk = videoIds.slice(i, i + 50);
-          const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${chunk.join(",")}`, {
-            headers: { Authorization: `Bearer ${data.accessToken}` }
-          });
-          const vData = await vRes.json();
-          for (const v of vData.items || []) {
-            if (v?.status?.embeddable) embeddable.add(v.id);
-            const iso = v?.contentDetails?.duration;
-            if (typeof iso === "string") {
-              durations[v.id] = parseYouTubeDurationSeconds(iso);
-            }
+        if (!vRes.ok) throw new Error("Erro ao buscar detalhes dos vídeos");
+        const vData = await vRes.json();
+        for (const v of vData.items || []) {
+          if (v?.status?.embeddable) embeddable.add(v.id);
+          const iso = v?.contentDetails?.duration;
+          if (typeof iso === "string") {
+            durations[v.id] = parseYouTubeDurationSeconds(iso);
           }
         }
-
-        const playableItems = items.filter((it: any) => embeddable.has(it?.contentDetails?.videoId));
-        setPlaylistTracks(playableItems);
-        setVideoDurations(prev => ({ ...prev, ...durations }));
       }
+
+      const playableItems = items.filter((it: any) => embeddable.has(it?.contentDetails?.videoId));
+      setPlaylistTracks(playableItems);
+      setVideoDurations(prev => ({ ...prev, ...durations }));
     } catch (err) {
       console.error("Erro ao buscar músicas da playlist:", err);
     } finally {
@@ -537,43 +583,88 @@ export default function Page() {
     setRandomColor(color);
 
     try {
-      const { data } = await authClient.getAccessToken({
-        providerId: "google",
+      const token = await getYoutubeToken();
+      if (!token) {
+        setLoadingTracks(false);
+        setError("Token do YouTube expirado. Faca login novamente.");
+        return;
+      }
+
+      // Buscar vídeos do canal (simulando "músicas populares")
+      const channelId = artist.snippet.resourceId.channelId;
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=viewCount&type=video&videoEmbeddable=true`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      if (!res.ok) throw new Error("Erro ao buscar vídeos do artista");
+      const videoData = await res.json();
+      const items = videoData.items || [];
+      setArtistVideos(items);
 
-      if (data?.accessToken) {
-        // Buscar vídeos do canal (simulando "músicas populares")
-        const channelId = artist.snippet.resourceId.channelId;
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=viewCount&type=video&videoEmbeddable=true`, {
-          headers: { Authorization: `Bearer ${data.accessToken}` }
-        });
-        const videoData = await res.json();
-        const items = videoData.items || [];
-        setArtistVideos(items);
-
-        const ids = items.map((it: any) => it?.id?.videoId).filter(Boolean);
-        if (ids.length > 0) {
-          const durations: Record<string, number> = {};
-          for (let i = 0; i < ids.length; i += 50) {
-            const chunk = ids.slice(i, i + 50);
-            const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&id=${chunk.join(",")}`, {
-              headers: { Authorization: `Bearer ${data.accessToken}` }
-            });
-            const vData = await vRes.json();
-            for (const v of vData.items || []) {
-              const iso = v?.contentDetails?.duration;
-              if (typeof iso === "string") {
-                durations[v.id] = parseYouTubeDurationSeconds(iso);
-              }
+      const ids = items.map((it: any) => it?.id?.videoId).filter(Boolean);
+      if (ids.length > 0) {
+        const durations: Record<string, number> = {};
+        for (let i = 0; i < ids.length; i += 50) {
+          const chunk = ids.slice(i, i + 50);
+          const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&id=${chunk.join(",")}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!vRes.ok) throw new Error("Erro ao buscar detalhes dos vídeos");
+          const vData = await vRes.json();
+          for (const v of vData.items || []) {
+            const iso = v?.contentDetails?.duration;
+            if (typeof iso === "string") {
+              durations[v.id] = parseYouTubeDurationSeconds(iso);
             }
           }
-          setVideoDurations(prev => ({ ...prev, ...durations }));
         }
+        setVideoDurations(prev => ({ ...prev, ...durations }));
       }
     } catch (err) {
       console.error("Erro ao buscar vídeos do artista:", err);
     } finally {
       setLoadingTracks(false);
+    }
+  };
+
+  const retry = () => {
+    setLoading(true);
+    setError(null);
+    fetchedForUserId.current = null;
+    const userId = session?.user?.id;
+    if (userId) {
+      fetchedForUserId.current = userId;
+      async function retryFetch() {
+        try {
+          const token = await getYoutubeToken();
+          if (!token) {
+            setError("Nao foi possivel conectar ao YouTube. Seu token de acesso pode estar expirado.");
+            setLoading(false);
+            return;
+          }
+          setYoutubeToken(token);
+          const plRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
+          if (!plRes) { setLoading(false); return; }
+          const plData = await plRes.json();
+          setPlaylists(plData.items || []);
+          const plAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
+          if (!plAllRes) { setLoading(false); return; }
+          const plAllData = await plAllRes.json();
+          setAllPlaylists(plAllData.items || []);
+          const subRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
+          if (!subRes) { setLoading(false); return; }
+          const subData = await subRes.json();
+          setSubscriptions(subData.items || []);
+          const subAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
+          if (!subAllRes) { setLoading(false); return; }
+          const subAllData = await subAllRes.json();
+          setAllSubscriptions(subAllData.items || []);
+        } catch {
+          setError("Erro inesperado ao carregar dados.");
+        } finally {
+          setLoading(false);
+        }
+      }
+      retryFetch();
     }
   };
 
@@ -593,13 +684,29 @@ export default function Page() {
         <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
 
         {/* Conteúdo Principal */}
-        <main className={`h-187.5 flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative transition-all duration-300 ${isVideoSidebarOpen ? '' : ''}`}>
+        <main className="h-187.5 flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative transition-all duration-300">
           {/* Header Superior */}
           <Header setView={setView} />
 
           {/* Scrollable Content */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-            {view === "home" ? (
+            {error ? (
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+                <div className="bg-[#282828] rounded-full p-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-[#b3b3b3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-white">Algo deu errado</h2>
+                <p className="text-[#b3b3b3] max-w-md">{error}</p>
+                <button
+                  onClick={retry}
+                  className="bg-white text-black font-bold px-8 py-3 rounded-full hover:scale-105 transition-transform cursor-pointer"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : view === "home" ? (
               <>
                 {/* Banner de Perfil Estilo Spotify */}
                 <section className="flex items-end gap-6 mb-8">
