@@ -58,19 +58,34 @@ export default function Page() {
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  async function redirectToLogin() {
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/me",
+    });
+  }
+
+  function isAuthError(code: string) {
+    return code === "invalid_grant" || code === "no_refresh_token" || code === "no_session";
+  }
+
   async function fetchWithRetry(token: string, url: string): Promise<Response | null> {
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (res.status === 401 || res.status === 403) {
-      const freshToken = await getYoutubeToken();
-      if (!freshToken) {
+      const tokenResult = await getYoutubeToken();
+      if ("error" in tokenResult) {
+        if (isAuthError(tokenResult.code)) {
+          await redirectToLogin();
+          return null;
+        }
         setError("Sessao expirada. Faca login novamente para acessar o YouTube.");
         return null;
       }
-      setYoutubeToken(freshToken);
+      setYoutubeToken(tokenResult.accessToken);
       const retryRes = await fetch(url, {
-        headers: { Authorization: `Bearer ${freshToken}` }
+        headers: { Authorization: `Bearer ${tokenResult.accessToken}` }
       });
       if (!retryRes.ok) {
         setError("Falha ao acessar o YouTube. Tente novamente mais tarde.");
@@ -366,12 +381,18 @@ export default function Page() {
         { headers: { Authorization: `Bearer ${youtubeToken}` } }
       );
       if (res.status === 401 || res.status === 403) {
-        const freshToken = await getYoutubeToken();
-        if (!freshToken) return;
-        setYoutubeToken(freshToken);
+        const tokenResult = await getYoutubeToken();
+        if ("error" in tokenResult) {
+          if (isAuthError(tokenResult.code)) {
+            await redirectToLogin();
+            return;
+          }
+          return;
+        }
+        setYoutubeToken(tokenResult.accessToken);
         const retryRes = await fetch(
           `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}`,
-          { headers: { Authorization: `Bearer ${freshToken}` } }
+          { headers: { Authorization: `Bearer ${tokenResult.accessToken}` } }
         );
         if (!retryRes.ok) return;
         const retryData = await retryRes.json();
@@ -450,34 +471,38 @@ export default function Page() {
       try {
         setError(null);
 
-        const token = await getYoutubeToken();
-        if (!token) {
-          setError("Nao foi possivel conectar ao YouTube. Seu token de acesso pode estar expirado. Faca login novamente.");
+        const tokenResult = await getYoutubeToken();
+        if ("error" in tokenResult) {
+          if (isAuthError(tokenResult.code)) {
+            await redirectToLogin();
+            return;
+          }
+          setError("Nao foi possivel conectar ao YouTube. Tente novamente mais tarde.");
           return;
         }
 
-        setYoutubeToken(token);
+        setYoutubeToken(tokenResult.accessToken);
 
         // Buscar Playlists
-        const plRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
+        const plRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
         if (!plRes) return;
         const plData = await plRes.json();
         setPlaylists(plData.items || []);
 
         // Buscar Playlists (todas)
-        const plAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
+        const plAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
         if (!plAllRes) return;
         const plAllData = await plAllRes.json();
         setAllPlaylists(plAllData.items || []);
 
         // Buscar Inscrições (Artistas)
-        const subRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
+        const subRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
         if (!subRes) return;
         const subData = await subRes.json();
         setSubscriptions(subData.items || []);
 
         // Buscar todas as Inscrições (Artistas)
-        const subAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
+        const subAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
         if (!subAllRes) return;
         const subAllData = await subAllRes.json();
         setAllSubscriptions(subAllData.items || []);
@@ -503,12 +528,17 @@ export default function Page() {
     setRandomColor(color);
 
     try {
-      const token = await getYoutubeToken();
-      if (!token) {
+      const tokenResult = await getYoutubeToken();
+      if ("error" in tokenResult) {
         setLoadingTracks(false);
+        if (isAuthError(tokenResult.code)) {
+          await redirectToLogin();
+          return;
+        }
         setError("Token do YouTube expirado. Faca login novamente.");
         return;
       }
+      const token = tokenResult.accessToken;
 
       const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlist.id}&maxResults=50`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -563,12 +593,17 @@ export default function Page() {
     setRandomColor(color);
 
     try {
-      const token = await getYoutubeToken();
-      if (!token) {
+      const tokenResult = await getYoutubeToken();
+      if ("error" in tokenResult) {
         setLoadingTracks(false);
+        if (isAuthError(tokenResult.code)) {
+          await redirectToLogin();
+          return;
+        }
         setError("Token do YouTube expirado. Faca login novamente.");
         return;
       }
+      const token = tokenResult.accessToken;
 
       // Buscar vídeos do canal (simulando "músicas populares")
       const channelId = artist.snippet.resourceId.channelId;
@@ -615,26 +650,30 @@ export default function Page() {
       fetchedForUserId.current = userId;
       async function retryFetch() {
         try {
-          const token = await getYoutubeToken();
-          if (!token) {
-            setError("Nao foi possivel conectar ao YouTube. Seu token de acesso pode estar expirado.");
+          const tokenResult = await getYoutubeToken();
+          if ("error" in tokenResult) {
             setLoading(false);
+            if (isAuthError(tokenResult.code)) {
+              await redirectToLogin();
+              return;
+            }
+            setError("Nao foi possivel conectar ao YouTube. Tente novamente mais tarde.");
             return;
           }
-          setYoutubeToken(token);
-          const plRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
+          setYoutubeToken(tokenResult.accessToken);
+          const plRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
           if (!plRes) { setLoading(false); return; }
           const plData = await plRes.json();
           setPlaylists(plData.items || []);
-          const plAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
+          const plAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
           if (!plAllRes) { setLoading(false); return; }
           const plAllData = await plAllRes.json();
           setAllPlaylists(plAllData.items || []);
-          const subRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
+          const subRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
           if (!subRes) { setLoading(false); return; }
           const subData = await subRes.json();
           setSubscriptions(subData.items || []);
-          const subAllRes = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
+          const subAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
           if (!subAllRes) { setLoading(false); return; }
           const subAllData = await subAllRes.json();
           setAllSubscriptions(subAllData.items || []);
