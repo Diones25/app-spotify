@@ -3,6 +3,7 @@
 import { authClient } from "@/lib/auth-client";
 import { getYoutubeToken } from "@/lib/get-youtube-token";
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
 import { User, Settings, Clock, Play, MoreHorizontal, Download, UserPlus, Pause } from "lucide-react";
@@ -20,7 +21,14 @@ interface Track {
 }
 
 export default function Page() {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/");
+    }
+  }, [session, isPending, router]);
   const [youtubeToken, setYoutubeToken] = useState<string | null>(null);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [allPlaylists, setAllPlaylists] = useState<any[]>([]);
@@ -687,12 +695,16 @@ export default function Page() {
     }
   };
 
-  if (!session) {
+  if (isPending) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-white">
-        <p>Por favor, faça login para acessar esta página.</p>
+        <p>Carregando...</p>
       </div>
     );
+  }
+
+  if (!session) {
+    return null;
   }
 
   return (
