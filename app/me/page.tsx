@@ -769,7 +769,7 @@ export default function Page() {
   return (
     <>
       <HeaderSearch />
-      <div className="flex h-screen bg-black overflow-hidden font-sans pr-2">
+      <div className="flex h-[calc(100dvh-10rem)] min-h-0 bg-black overflow-hidden font-sans pr-2">
         {/* Sidebar */}
         {!isVideoMaximized && (
           <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
@@ -777,7 +777,7 @@ export default function Page() {
 
         {/* Conteúdo Principal */}
         {!isVideoMaximized && (
-        <main className="h-187.5 flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative transition-all duration-300">
+        <main className="ml-0 relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-linear-to-b from-[#1e1e1e] to-[#121212] transition-all duration-300">
           {/* Header Superior */}
           <Header setView={setView} />
 

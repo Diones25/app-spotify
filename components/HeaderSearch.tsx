@@ -3,7 +3,7 @@ import SpotifySvg from "./SpotifySvg";
 
 export default function HeaderSearch() {
   return (
-    <header className="bg-black flex justify-between items-center px-4 py-2 gap-4">
+    <header className="bg-black flex h-16 justify-between items-center px-4 gap-4 shrink-0">
       {/* Lado Esquerdo - Ícone de Home ou Logo */}
       <div className="bg-[#1f1f1f] w-9 h-9 rounded-full flex items-center justify-center shrink-0">
         <SpotifySvg />

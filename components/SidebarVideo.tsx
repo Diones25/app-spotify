@@ -65,6 +65,15 @@ export default function SidebarVideo({
   onSeek,
 }: SidebarVideoProps) {
   const progress = duration > 0 ? currentTime / duration : 0;
+  const playerStyle = isMaximized
+    ? {
+      aspectRatio: "16 / 9",
+      width: "min(100%, calc((100dvh - 17rem) * 16 / 9))",
+    }
+    : {
+      aspectRatio: "16 / 9",
+      width: "100%",
+    };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -102,9 +111,14 @@ export default function SidebarVideo({
       {/* Player de Vídeo - container do player único */}
       <div className="flex items-center justify-center px-4">
         <div
-          ref={playerContainerRef}
-          className="relative w-full aspect-video bg-black rounded-lg overflow-hidden"
-        />
+          className="relative mx-auto max-w-full bg-black rounded-lg overflow-hidden"
+          style={playerStyle}
+        >
+          <div
+            ref={playerContainerRef}
+            className="absolute inset-0 h-full w-full [&_iframe]:h-full [&_iframe]:w-full"
+          />
+        </div>
       </div>
 
       {/* Progress Bar e Timer */}
