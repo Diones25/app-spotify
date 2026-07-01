@@ -26,14 +26,6 @@ export default function HeaderSearch() {
             placeholder="O que você quer ouvir?"
             className="w-full h-12 rounded-full bg-[#1f1f1f] pl-12 pr-16 text-white text-sm border-none outline-none hover:bg-[#2a2a2a] focus:ring-2 focus:ring-white/10 transition-all placeholder:text-[#757575]"
           />
-
-          {/* Separador e Ícone da Direita (Pasta/Maleta) */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
-            <div className="w-px h-6 bg-[#333]" />
-            <button className="text-[#b3b3b3] hover:text-white transition-colors">
-              <Briefcase size={24} />
-            </button>
-          </div>
         </div>
       </div>
 
