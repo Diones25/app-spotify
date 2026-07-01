@@ -79,12 +79,12 @@ export default function SidebarVideo({
         <div className="flex items-center justify-between px-4 h-14 shrink-0 mb-2">
           <h2 className="text-white font-bold text-base">{playlistName}</h2>
           <div className="flex items-center gap-2">
-            <button className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10">
+            <button className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer">
               <Maximize2 size={16} />
             </button>
             <button
               onClick={onClose}
-              className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10"
+              className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer"
             >
               <X size={20} />
             </button>
