@@ -55,6 +55,7 @@ export default function Page() {
   const [isRepeat, setIsRepeat] = useState(false);
   const [isVideoSidebarOpen, setIsVideoSidebarOpen] = useState(false);
   const [videoDetails, setVideoDetails] = useState<any>(null);
+  const [channelDetails, setChannelDetails] = useState<any>(null);
   const [videoSidebarLoading, setVideoSidebarLoading] = useState(false);
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const queueRef = useRef<Track[]>([]);
@@ -299,6 +300,7 @@ export default function Page() {
 
   useEffect(() => {
     if (!isVideoSidebarOpen || !currentTrack) return;
+    setChannelDetails(null);
     fetchVideoDetails(currentTrack.id);
   }, [currentTrack?.id, isVideoSidebarOpen]);
 
@@ -409,11 +411,13 @@ export default function Page() {
           setVideoDetails({
             title: v.snippet.title,
             channelTitle: v.snippet.channelTitle,
+            channelId: v.snippet.channelId,
             description: v.snippet.description,
             viewCount: parseInt(v.statistics?.viewCount || "0").toLocaleString('pt-BR'),
             likeCount: parseInt(v.statistics?.likeCount || "0").toLocaleString('pt-BR'),
             publishedAt: v.snippet.publishedAt,
           });
+          fetchChannelDetails(v.snippet.channelId);
         }
         return;
       }
@@ -423,11 +427,13 @@ export default function Page() {
         setVideoDetails({
           title: v.snippet.title,
           channelTitle: v.snippet.channelTitle,
+          channelId: v.snippet.channelId,
           description: v.snippet.description,
           viewCount: parseInt(v.statistics?.viewCount || "0").toLocaleString('pt-BR'),
           likeCount: parseInt(v.statistics?.likeCount || "0").toLocaleString('pt-BR'),
           publishedAt: v.snippet.publishedAt,
         });
+        fetchChannelDetails(v.snippet.channelId);
       }
     } catch (err) {
       console.error("Erro ao buscar detalhes do vídeo:", err);
@@ -436,8 +442,60 @@ export default function Page() {
     }
   };
 
+  const fetchChannelDetails = async (channelId: string) => {
+    if (!youtubeToken) return;
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}`,
+        { headers: { Authorization: `Bearer ${youtubeToken}` } }
+      );
+      if (res.status === 401 || res.status === 403) {
+        const tokenResult = await getYoutubeToken();
+        if ("error" in tokenResult) {
+          if (isAuthError(tokenResult.code)) {
+            await redirectToLogin();
+            return;
+          }
+          return;
+        }
+        setYoutubeToken(tokenResult.accessToken);
+        const retryRes = await fetch(
+          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}`,
+          { headers: { Authorization: `Bearer ${tokenResult.accessToken}` } }
+        );
+        if (!retryRes.ok) return;
+        const retryData = await retryRes.json();
+        if (retryData.items && retryData.items.length > 0) {
+          const ch = retryData.items[0];
+          setChannelDetails({
+            title: ch.snippet.title,
+            description: ch.snippet.description,
+            thumbnail: ch.snippet.thumbnails?.high?.url || ch.snippet.thumbnails?.medium?.url || ch.snippet.thumbnails?.default?.url,
+            subscriberCount: parseInt(ch.statistics?.subscriberCount || "0").toLocaleString('pt-BR'),
+            videoCount: parseInt(ch.statistics?.videoCount || "0").toLocaleString('pt-BR'),
+          });
+        }
+        return;
+      }
+      const data = await res.json();
+      if (data.items && data.items.length > 0) {
+        const ch = data.items[0];
+        setChannelDetails({
+          title: ch.snippet.title,
+          description: ch.snippet.description,
+          thumbnail: ch.snippet.thumbnails?.high?.url || ch.snippet.thumbnails?.medium?.url || ch.snippet.thumbnails?.default?.url,
+          subscriberCount: parseInt(ch.statistics?.subscriberCount || "0").toLocaleString('pt-BR'),
+          videoCount: parseInt(ch.statistics?.videoCount || "0").toLocaleString('pt-BR'),
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao buscar detalhes do canal:", err);
+    }
+  };
+
   const toggleVideoSidebar = () => {
     if (!isVideoSidebarOpen && currentTrack) {
+      setChannelDetails(null);
       fetchVideoDetails(currentTrack.id);
     }
     setIsVideoSidebarOpen(!isVideoSidebarOpen);
@@ -1098,6 +1156,7 @@ export default function Page() {
           isOpen={isVideoSidebarOpen}
           onClose={() => setIsVideoSidebarOpen(false)}
           videoDetails={videoDetails}
+          channelDetails={channelDetails}
           currentTrack={currentTrack}
           playlistName={getPlaylistName()}
           loading={videoSidebarLoading}

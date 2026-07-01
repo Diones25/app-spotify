@@ -6,16 +6,26 @@ import { RefObject } from "react";
 interface VideoDetails {
   title: string;
   channelTitle: string;
+  channelId: string;
   description: string;
   viewCount: string;
   likeCount: string;
   publishedAt: string;
 }
 
+interface ChannelDetails {
+  title: string;
+  description: string;
+  thumbnail: string;
+  subscriberCount: string;
+  videoCount: string;
+}
+
 interface SidebarVideoProps {
   isOpen: boolean;
   onClose: () => void;
   videoDetails: VideoDetails | null;
+  channelDetails: ChannelDetails | null;
   currentTrack: {
     title: string;
     artist: string;
@@ -41,6 +51,7 @@ export default function SidebarVideo({
   isOpen,
   onClose,
   videoDetails,
+  channelDetails,
   currentTrack,
   playlistName,
   loading,
@@ -60,9 +71,8 @@ export default function SidebarVideo({
 
   return (
     <aside
-      className={`${
-        isOpen ? "" : "fixed -left-2499.75"
-      } w-105 pt-2 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-hidden`}
+      className={`${isOpen ? "" : "fixed -left-2499.75"
+        } w-105 pt-2 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-y-auto custom-scrollbar`}
     >
       {/* Header */}
       {isOpen && (
@@ -112,7 +122,7 @@ export default function SidebarVideo({
           </div>
 
           {/* Informações da Música */}
-          <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+          <div className="p-4 space-y-4 flex-1">
             {loading ? (
               <div className="space-y-3 animate-pulse">
                 <div className="h-5 bg-[#282828] rounded w-3/4" />
@@ -124,67 +134,72 @@ export default function SidebarVideo({
               <>
                 {/* Título e Artista */}
                 <div className="flex items-start gap-3">
-                  <img
-                    src={currentTrack?.image || ""}
-                    alt=""
-                    className="w-12 h-12 rounded object-cover shrink-0"
-                  />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-white font-bold text-base truncate">
                       {videoDetails.title}
                     </h3>
-                    <p className="text-[#b3b3b3] text-sm truncate hover:underline cursor-pointer">
-                      {videoDetails.channelTitle}
-                    </p>
                   </div>
                 </div>
-
-                {/* Playlist name if available */}
-                {playlistName && (
-                  <div className="flex items-center gap-2 text-[#b3b3b3] text-sm">
-                    <ListMusic size={16} />
-                    <span className="truncate">{playlistName}</span>
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-[#b3b3b3] text-xs">
-                  <span>{videoDetails.viewCount} visualizações</span>
-                  <span>•</span>
-                  <span>{videoDetails.likeCount} curtidas</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                  <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-bold px-4 py-1.5 rounded-full transition-colors">
-                    <ThumbsUp size={16} />
-                    Curtir
-                  </button>
-                  <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-bold px-4 py-1.5 rounded-full transition-colors">
-                    <Share2 size={16} />
-                    Compartilhar
-                  </button>
-                </div>
-
-                {/* Description */}
-                <div className="pt-2">
-                  <p className="text-[#b3b3b3] text-xs leading-relaxed line-clamp-4">
-                    {videoDetails.description}
-                  </p>
-                </div>
-
-                {/* Published date */}
-                <p className="text-[#b3b3b3] text-xs">
-                  Publicado em {new Date(videoDetails.publishedAt).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </p>
               </>
             ) : (
               <p className="text-[#b3b3b3] text-sm">Nenhum detalhe disponível</p>
             )}
+          </div>
+
+          <div className="bg-[#1F1F1F] mb-27.5 mt-2 mx-4 rounded-md">
+            <div className="">
+
+              {channelDetails ? (
+                <>
+                  <div className="relative w-full">
+                    <img
+                      src={channelDetails.thumbnail}
+                      alt={channelDetails.title}
+                      className="w-full h-65 object-cover rounded-t-md"
+                    />
+
+                    <span className="absolute top-3 left-3 text-white text-md font-bold">Sobre o artista</span>
+                  </div>
+
+                  <div className="p-4 ">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-white font-bold text-lg">{channelDetails.title}</h4>
+                        <svg className="w-4 h-4 text-[#3d91f4] shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                        </svg>
+                      </div>
+                    </div>
+                    {videoDetails ? (
+                      <>
+                        <p className="text-[#b3b3b3] text-sm">{videoDetails.viewCount} ouvintes mensais</p>
+
+
+                        <div className="pt-2">
+                          <p className="text-[#b3b3b3] text-xs leading-relaxed line-clamp-4">
+                            {videoDetails.description}
+                          </p>
+                        </div>
+
+
+                        <p className="text-[#b3b3b3] text-xs">
+                          Publicado em {new Date(videoDetails.publishedAt).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[#b3b3b3] text-sm">Nenhum detalhe videoDetails disponível</p>
+                    )}
+
+                  </div>
+                </>
+              ) : (
+                <p className="text-[#b3b3b3] text-sm">Nenhum detalhe channelDetails disponível</p>
+              )}
+            </div>
           </div>
         </>
       )}
