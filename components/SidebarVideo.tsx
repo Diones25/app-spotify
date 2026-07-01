@@ -98,12 +98,16 @@ export default function SidebarVideo({
             >
               {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             </button>
-            <button
-              onClick={onClose}
-              className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer"
-            >
-              <X size={20} />
-            </button>
+
+            {isMaximized ? "" :
+              <button
+                onClick={onClose}
+                className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            }
+            
           </div>
         </div>
       )}
