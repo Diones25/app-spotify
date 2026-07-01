@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
-import { User, Settings, Clock, Play, MoreHorizontal, Download, UserPlus, Pause } from "lucide-react";
+import { User, Settings, Clock, Play, MoreHorizontal, Pause } from "lucide-react";
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
 import PlayerMusic from "@/components/PlayerMusic";

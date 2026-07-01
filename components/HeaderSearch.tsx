@@ -1,19 +1,24 @@
-import { Search, Briefcase, Home } from "lucide-react";
+import { Search, Home } from "lucide-react";
 import SpotifySvg from "./SpotifySvg";
+import Link from "next/link";
 
 export default function HeaderSearch() {
   return (
     <header className="bg-black flex h-16 justify-between items-center px-4 gap-4 shrink-0">
       {/* Lado Esquerdo - Ícone de Home ou Logo */}
       <div className="bg-[#1f1f1f] w-9 h-9 rounded-full flex items-center justify-center shrink-0">
-        <SpotifySvg />
+        <Link href={"/me"}>
+          <SpotifySvg />
+        </Link>
       </div>
 
       {/* Centro - Barra de Busca */}
       <div className="flex">
         <div className="mr-2">
           <button className="bg-[#1f1f1f] w-12 h-12 rounded-full flex items-center justify-center shrink-0 hover:bg-[#2a2a2a] transition-colors text-white">
-            <Home size={24} />
+            <Link href={"/me"}>
+              <Home size={24} />            
+            </Link>
           </button>
         </div>
         <div className="flex-1 max-w-2xl relative group w-md">
