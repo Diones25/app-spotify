@@ -125,10 +125,9 @@ export default function SidebarVideo({
         </div>
       </div>
 
-      {/* Progress Bar e Timer */}
+      {/* Informações da Música */}
       {isOpen && (
         <>
-          {/* Informações da Música */}
           <div className="p-4 space-y-4 flex-1">
             {loading ? (
               <div className="space-y-3 animate-pulse">
