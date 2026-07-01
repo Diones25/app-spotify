@@ -43,13 +43,6 @@ interface SidebarVideoProps {
   onSeek: (time: number) => void;
 }
 
-function formatTime(seconds: number): string {
-  if (!seconds || !isFinite(seconds)) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 export default function SidebarVideo({
   isOpen,
   onClose,
@@ -57,15 +50,10 @@ export default function SidebarVideo({
   onToggleMaximize,
   videoDetails,
   channelDetails,
-  currentTrack,
   playlistName,
   loading,
   playerContainerRef,
-  currentTime,
-  duration,
-  onSeek,
 }: SidebarVideoProps) {
-  const progress = duration > 0 ? currentTime / duration : 0;
   const playerStyle = isMaximized
     ? {
       aspectRatio: "16 / 9",
@@ -75,13 +63,6 @@ export default function SidebarVideo({
       aspectRatio: "16 / 9",
       width: "100%",
     };
-
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const pct = Math.max(0, Math.min(1, x / rect.width));
-    onSeek(pct * duration);
-  };
 
   return (
     <aside
