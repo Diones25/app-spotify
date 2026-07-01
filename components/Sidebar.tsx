@@ -1,4 +1,4 @@
-import { Home, Search, Library, Plus, Heart, Music2, Users, Mic2, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CardSidebar } from "./CardSidebar";
 import { CardArtistSidebar } from "./CardArtistSidebar";
@@ -56,10 +56,7 @@ export function Sidebar({
             <div className="flex items-center gap-2 w-full">
               <button
                 onClick={() => onFilterChange?.(activeFilter)}
-                className={cn(
-                  "text-white px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap cursor-pointer transition-colors",
-                  "bg-[#2a2a2a] hover:bg-[#3a3a3a]"
-                )}
+                className="bg-[#F0F0F0] text-black px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap cursor-pointer transition-colors"
               >
                 {activeFilter === "playlists" ? "Playlists" : "Artistas"}
               </button>
