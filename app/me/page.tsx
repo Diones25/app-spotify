@@ -67,6 +67,7 @@ export default function Page() {
   const [ytApiReady, setYtApiReady] = useState(false);
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [sidebarFilter, setSidebarFilter] = useState<"all" | "playlists" | "artists">("all");
 
   async function redirectToLogin() {
     await authClient.signIn.social({
@@ -772,7 +773,15 @@ export default function Page() {
       <div className="flex h-[calc(100dvh-10rem)] min-h-0 bg-black overflow-hidden font-sans pr-2">
         {/* Sidebar */}
         {!isVideoMaximized && (
-          <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
+          <Sidebar
+            className="w-87.5 hidden md:flex"
+            playlists={playlists}
+            subscriptions={subscriptions}
+            activeFilter={sidebarFilter}
+            onFilterChange={setSidebarFilter}
+            onPlaylistClick={openPlaylistDetail}
+            onArtistClick={openArtistDetail}
+          />
         )}
 
         {/* Conteúdo Principal */}
