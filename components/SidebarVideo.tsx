@@ -2,6 +2,7 @@
 
 import { X, Maximize2, Minimize2 } from "lucide-react";
 import { RefObject } from "react";
+import ImageNotfound from "../assets/no_image.jpg";
 
 interface VideoDetails {
   title: string;
@@ -158,11 +159,19 @@ export default function SidebarVideo({
               {channelDetails ? (
                 <>
                   <div className="relative w-full">
-                    <img
-                      src={channelDetails.thumbnail}
-                      alt={channelDetails.title}
-                      className="w-full h-65 object-cover rounded-t-md"
-                    />
+                    {channelDetails.thumbnail ? (
+                      <img
+                        src={channelDetails.thumbnail}
+                        alt={channelDetails.title}
+                        className="w-full h-65 object-cover rounded-t-md"
+                      />
+                    ) : (
+                      <img
+                          src={ImageNotfound as unknown as string}
+                        alt={channelDetails.title}
+                        className="w-full h-65 object-cover rounded-t-md"
+                      />
+                    )}
 
                     <span className="absolute top-3 left-3 text-white text-md font-bold">Sobre o artista</span>
                   </div>
