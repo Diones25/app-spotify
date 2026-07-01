@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Maximize2, ThumbsUp, Share2, ListMusic } from "lucide-react";
+import { X, Maximize2, Minimize2 } from "lucide-react";
 import { RefObject } from "react";
 
 interface VideoDetails {
@@ -24,6 +24,8 @@ interface ChannelDetails {
 interface SidebarVideoProps {
   isOpen: boolean;
   onClose: () => void;
+  isMaximized: boolean;
+  onToggleMaximize: () => void;
   videoDetails: VideoDetails | null;
   channelDetails: ChannelDetails | null;
   currentTrack: {
@@ -50,6 +52,8 @@ function formatTime(seconds: number): string {
 export default function SidebarVideo({
   isOpen,
   onClose,
+  isMaximized,
+  onToggleMaximize,
   videoDetails,
   channelDetails,
   currentTrack,
@@ -72,15 +76,18 @@ export default function SidebarVideo({
   return (
     <aside
       className={`${isOpen ? "" : "fixed -left-2499.75"
-        } w-105 pt-2 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-y-auto custom-scrollbar`}
+        } ${isMaximized ? "flex-1 w-full" : "w-105"} pt-2 ml-2 rounded-lg shrink-0 bg-[#121212] border-l border-white/10 flex flex-col h-full overflow-y-auto custom-scrollbar`}
     >
       {/* Header */}
       {isOpen && (
         <div className="flex items-center justify-between px-4 h-14 shrink-0 mb-2">
           <h2 className="text-white font-bold text-base">{playlistName}</h2>
           <div className="flex items-center gap-2">
-            <button className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer">
-              <Maximize2 size={16} />
+            <button
+              onClick={onToggleMaximize}
+              className="text-[#b3b3b3] hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer"
+            >
+              {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             </button>
             <button
               onClick={onClose}

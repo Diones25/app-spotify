@@ -54,6 +54,7 @@ export default function Page() {
   const [volume, setVolume] = useState(1);
   const [isRepeat, setIsRepeat] = useState(false);
   const [isVideoSidebarOpen, setIsVideoSidebarOpen] = useState(false);
+  const [isVideoMaximized, setIsVideoMaximized] = useState(false);
   const [videoDetails, setVideoDetails] = useState<any>(null);
   const [channelDetails, setChannelDetails] = useState<any>(null);
   const [videoSidebarLoading, setVideoSidebarLoading] = useState(false);
@@ -770,9 +771,12 @@ export default function Page() {
       <HeaderSearch />
       <div className="flex h-screen bg-black overflow-hidden font-sans pr-2">
         {/* Sidebar */}
-        <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
+        {!isVideoMaximized && (
+          <Sidebar className="w-87.5 hidden md:flex" playlists={playlists} />
+        )}
 
         {/* Conteúdo Principal */}
+        {!isVideoMaximized && (
         <main className="h-187.5 flex-1 flex flex-col bg-linear-to-b from-[#1e1e1e] to-[#121212] ml-0 rounded-lg overflow-hidden relative transition-all duration-300">
           {/* Header Superior */}
           <Header setView={setView} />
@@ -1150,11 +1154,14 @@ export default function Page() {
             )}
           </div>
         </main>
+        )}
 
         {/* Video Sidebar */}
         <SidebarVideo
           isOpen={isVideoSidebarOpen}
           onClose={() => setIsVideoSidebarOpen(false)}
+          isMaximized={isVideoMaximized}
+          onToggleMaximize={() => setIsVideoMaximized((prev) => !prev)}
           videoDetails={videoDetails}
           channelDetails={channelDetails}
           currentTrack={currentTrack}
