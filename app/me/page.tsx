@@ -1196,6 +1196,7 @@ export default function Page() {
         isVideoSidebarOpen={isVideoSidebarOpen}
         onToggleVideoSidebar={toggleVideoSidebar}
         hasVideo={!!currentTrack}
+        isVideoMaximized={isVideoMaximized}
       />
     </>
   );

@@ -21,6 +21,7 @@ interface PlayerMusicProps {
   isVideoSidebarOpen: boolean;
   onToggleVideoSidebar: () => void;
   hasVideo: boolean;
+  isVideoMaximized: boolean;
 }
 
 export default function PlayerMusic({
@@ -38,7 +39,8 @@ export default function PlayerMusic({
   onToggleRepeat,
   isVideoSidebarOpen,
   onToggleVideoSidebar,
-  hasVideo
+  hasVideo,
+  isVideoMaximized
 }: PlayerMusicProps) {
   
   const formatTime = (seconds: number) => {
@@ -79,7 +81,7 @@ export default function PlayerMusic({
         <div className="flex items-center gap-6">
           <button
             onClick={onToggleVideoSidebar}
-            disabled={!hasVideo}
+            disabled={!hasVideo || isVideoMaximized}
             className={`${isVideoSidebarOpen ? 'text-[#1ed760]' : hasVideo ? 'text-[#b3b3b3]' : 'text-[#535353]'} hover:[#1ed760] transition-colors disabled:cursor-not-allowed cursor-pointer`}
             title={hasVideo ? (isVideoSidebarOpen ? 'Fechar vídeo' : 'Abrir vídeo') : 'Vídeo indisponível'}
           >
