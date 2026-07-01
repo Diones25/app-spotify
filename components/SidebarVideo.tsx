@@ -128,24 +128,6 @@ export default function SidebarVideo({
       {/* Progress Bar e Timer */}
       {isOpen && (
         <>
-          <div className="flex items-center gap-2 px-6 pt-2 pb-1">
-            <span className="text-[#b3b3b3] text-xs tabular-nums min-w-8 text-right">
-              {formatTime(currentTime)}
-            </span>
-            <div
-              className="flex-1 h-1 bg-[#4d4d4d] rounded-full cursor-pointer group relative"
-              onClick={handleSeek}
-            >
-              <div
-                className="h-full bg-white rounded-full group-hover:bg-green-500 transition-colors"
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
-            <span className="text-[#b3b3b3] text-xs tabular-nums min-w-8">
-              {formatTime(duration)}
-            </span>
-          </div>
-
           {/* Informações da Música */}
           <div className="p-4 space-y-4 flex-1">
             {loading ? (
