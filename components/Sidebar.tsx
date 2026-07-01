@@ -23,8 +23,8 @@ export function Sidebar({ className, playlists = [] }: SidebarProps) {
 
         {/* Filtros rápidos */}
         <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
-          <span className="bg-[#2a2a2a] text-white px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap">Playlists</span>
-          <span className="bg-[#2a2a2a] text-white px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap">Artistas</span>
+          <button className="bg-[#2a2a2a] text-white px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap cursor-pointer">Playlists</button>
+          <button className="bg-[#2a2a2a] text-white px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap cursor-pointer">Artistas</button>
         </div>
 
         {/* Lista de Itens */}
