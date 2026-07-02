@@ -2,7 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 import { getYoutubeToken } from "@/lib/get-youtube-token";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
@@ -139,7 +139,7 @@ export default function Page() {
   const queueRef = useRef<Track[]>([]);
   const queueIndexRef = useRef(0);
   const isRepeatRef = useRef(false);
-  const playerContainerRef = useRef<HTMLDivElement | null>(null);
+  const [playerContainerElement, setPlayerContainerElement] = useState<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<YTPlayer | null>(null);
   const ytPlayerBootstrapRef = useRef<YTPlayer | null>(null);
   const playerBootstrapTimerRef = useRef<number | null>(null);
@@ -155,6 +155,10 @@ export default function Page() {
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarFilter, setSidebarFilter] = useState<"all" | "playlists" | "artists">("all");
+
+  const playerContainerRef = useCallback((element: HTMLDivElement | null) => {
+    setPlayerContainerElement(element);
+  }, []);
 
   async function redirectToLogin() {
     await authClient.signIn.social({
@@ -458,7 +462,10 @@ export default function Page() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!ytApiReady) return;
-    if (!playerContainerRef.current) return;
+    if (!playerContainerElement) {
+      console.info("YouTube Player aguardando host.");
+      return;
+    }
     if (ytPlayerRef.current || ytPlayerBootstrapRef.current) return;
 
     console.info("Criando YouTube Player.", {
@@ -466,7 +473,7 @@ export default function Page() {
       nonce: playerBootstrapNonce,
     });
 
-    const bootstrapPlayer = new (window as any).YT.Player(playerContainerRef.current, {
+    const bootstrapPlayer = new (window as any).YT.Player(playerContainerElement, {
       height: "100%",
       width: "100%",
       videoId: "",
@@ -557,7 +564,7 @@ export default function Page() {
         destroyPlayerInstance(player);
       }
     };
-  }, [ytApiReady, playerBootstrapNonce]);
+  }, [ytApiReady, playerBootstrapNonce, playerContainerElement]);
 
   useEffect(() => {
     const player = getReadyPlayer();

@@ -1,7 +1,7 @@
 "use client"
 
 import { X, Maximize2, Minimize2 } from "lucide-react";
-import { RefObject } from "react";
+import { Ref } from "react";
 import ImageNotfound from "../assets/no_image.jpg";
 
 interface VideoDetails {
@@ -36,7 +36,7 @@ interface SidebarVideoProps {
   } | null;
   playlistName?: string;
   loading?: boolean;
-  playerContainerRef: RefObject<HTMLDivElement | null>;
+  playerContainerRef: Ref<HTMLDivElement>;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
