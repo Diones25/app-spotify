@@ -8,27 +8,31 @@ Plataforma web para descoberta e reprodução de música a partir do YouTube. Au
 
 **Tela de login** — Botão "Login com Google" com autenticação OAuth.
 
-![login](assets/screenshots/login.png)
+![login](./assets/doc/login.png)
 
 **Página inicial** — Destaques, navegação e cards de playlists/artistas.
 
-![home](assets/screenshots/home.png)
+![home](./assets/doc/pagina_inicial.png)
 
 **Detalhes da playlist** — Lista de faixas com gradiente dinâmico no cabeçalho.
 
-![playlist-detail](assets/screenshots/playlist-detail.png)
+![playlist-detail](./assets/doc/playlist.png)
 
 **Detalhes do artista** — Informações do canal YouTube com gradiente dinâmico.
 
-![artist-detail](assets/screenshots/artist-detail.png)
+![artist-detail](./assets/doc/artista.png)
 
 **Player** — Barra fixa no rodapé com controles de reprodução, progresso e volume.
 
-![player](assets/screenshots/player.png)
+![player](./assets/doc/player_musica.png)
 
 **Sidebar de vídeo** — Player do YouTube com detalhes do vídeo e do canal.
 
-![video-sidebar](assets/screenshots/video-sidebar.png)
+![player](./assets/doc/playervideo_01.png)
+![player](./assets/doc/playervideo02.png)
+
+**Busca de musicas** — Campode busca de musicas com filtro por Playlist, Musicas e Artistas.
+![player](./assets/doc/busca.png)
 
 ## Tecnologias
 
