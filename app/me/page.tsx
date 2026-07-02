@@ -141,13 +141,17 @@ export default function Page() {
   const isRepeatRef = useRef(false);
   const playerContainerRef = useRef<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<YTPlayer | null>(null);
+  const ytPlayerBootstrapRef = useRef<YTPlayer | null>(null);
+  const playerBootstrapTimerRef = useRef<number | null>(null);
   const playerReadyRef = useRef(false);
   const volumeRef = useRef(1);
   const isPlayingRef = useRef(false);
   const pendingPlaybackRef = useRef<PendingPlayback | null>(null);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
+  const playerBootstrapRetryCountRef = useRef(0);
   const [ytApiReady, setYtApiReady] = useState(false);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [playerBootstrapNonce, setPlayerBootstrapNonce] = useState(0);
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarFilter, setSidebarFilter] = useState<"all" | "playlists" | "artists">("all");
@@ -339,6 +343,39 @@ export default function Page() {
     return player;
   };
 
+  const clearPlayerBootstrapTimer = () => {
+    if (playerBootstrapTimerRef.current === null) return;
+    window.clearTimeout(playerBootstrapTimerRef.current);
+    playerBootstrapTimerRef.current = null;
+  };
+
+  const destroyPlayerInstance = (player: YTPlayer | null | undefined) => {
+    if (typeof player?.destroy === "function") {
+      player.destroy();
+    }
+  };
+
+  const retryPlayerBootstrap = (reason: string) => {
+    clearPlayerBootstrapTimer();
+    destroyPlayerInstance(ytPlayerBootstrapRef.current);
+    ytPlayerBootstrapRef.current = null;
+    playerReadyRef.current = false;
+    ytPlayerRef.current = null;
+    lastLoadedTrackIdRef.current = null;
+
+    if (playerBootstrapRetryCountRef.current >= 1) {
+      console.error("YouTube Player falhou ao inicializar apos retry.", { reason });
+      return;
+    }
+
+    playerBootstrapRetryCountRef.current += 1;
+    console.warn("Reiniciando bootstrap do YouTube Player.", {
+      reason,
+      attempt: playerBootstrapRetryCountRef.current + 1,
+    });
+    setPlayerBootstrapNonce((value) => value + 1);
+  };
+
   const syncPlayerVolume = (player: YTPlayer) => {
     if (typeof player.setVolume !== "function") return;
     const nextVolume = volumeRef.current;
@@ -395,6 +432,7 @@ export default function Page() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if ((window as any).YT?.Player) {
+      console.info("YouTube Iframe API ja estava carregada.");
       setYtApiReady(true);
       return;
     }
@@ -402,6 +440,7 @@ export default function Page() {
     (window as any).__YT_IFRAME_API_LOADING__ = true;
 
     (window as any).onYouTubeIframeAPIReady = () => {
+      console.info("YouTube Iframe API carregada.");
       setYtApiReady(true);
       (window as any).__YT_IFRAME_API_LOADING__ = false;
     };
@@ -420,9 +459,14 @@ export default function Page() {
     if (typeof window === "undefined") return;
     if (!ytApiReady) return;
     if (!playerContainerRef.current) return;
-    if (ytPlayerRef.current) return;
+    if (ytPlayerRef.current || ytPlayerBootstrapRef.current) return;
 
-    ytPlayerRef.current = new (window as any).YT.Player(playerContainerRef.current, {
+    console.info("Criando YouTube Player.", {
+      attempt: playerBootstrapRetryCountRef.current + 1,
+      nonce: playerBootstrapNonce,
+    });
+
+    const bootstrapPlayer = new (window as any).YT.Player(playerContainerRef.current, {
       height: "100%",
       width: "100%",
       videoId: "",
@@ -438,8 +482,11 @@ export default function Page() {
         onReady: (event: YTPlayerEvent) => {
           const player = event?.target;
           if (!player || typeof player.setVolume !== "function") return;
+          clearPlayerBootstrapTimer();
+          ytPlayerBootstrapRef.current = null;
           ytPlayerRef.current = player;
           playerReadyRef.current = true;
+          playerBootstrapRetryCountRef.current = 0;
           setIsPlayerReady(true);
           syncPlayerVolume(player);
           console.info("YouTube Player pronto.", {
@@ -487,18 +534,30 @@ export default function Page() {
         }
       }
     });
+    ytPlayerBootstrapRef.current = bootstrapPlayer;
+    clearPlayerBootstrapTimer();
+    playerBootstrapTimerRef.current = window.setTimeout(() => {
+      if (playerReadyRef.current) return;
+      console.warn("YouTube Player bootstrap timeout.", {
+        attempt: playerBootstrapRetryCountRef.current + 1,
+      });
+      retryPlayerBootstrap("onReady_timeout");
+    }, 7000);
 
     return () => {
+      clearPlayerBootstrapTimer();
       playerReadyRef.current = false;
-      pendingPlaybackRef.current = null;
       lastLoadedTrackIdRef.current = null;
       const player = ytPlayerRef.current;
+      const bootstrapInstance = ytPlayerBootstrapRef.current;
       ytPlayerRef.current = null;
-      if (typeof player?.destroy === "function") {
-        player.destroy();
+      ytPlayerBootstrapRef.current = null;
+      destroyPlayerInstance(bootstrapInstance);
+      if (bootstrapInstance !== player) {
+        destroyPlayerInstance(player);
       }
     };
-  }, [ytApiReady]);
+  }, [ytApiReady, playerBootstrapNonce]);
 
   useEffect(() => {
     const player = getReadyPlayer();
@@ -595,7 +654,6 @@ export default function Page() {
     pendingPlaybackRef.current = { track, autoplay: true };
     setCurrentTrack(track);
     setIsPlaying(true);
-    loadTrackIntoPlayer(track, true, "playTrack");
   };
 
   const handleNext = () => {
