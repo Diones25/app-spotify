@@ -1230,11 +1230,6 @@ export default function Page() {
             ) : view === "search" ? (
               <section className="space-y-6">
                 <div className="flex flex-col gap-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Resultados para &quot;{submittedQuery}&quot;</h1>
-                    <p className="text-sm text-[#b3b3b3] mt-1">Playlists, musicas e artistas encontrados no YouTube.</p>
-                  </div>
-
                   <div className="flex flex-wrap gap-2">
                     {[
                       { value: "all", label: "Tudo" },
@@ -1271,40 +1266,8 @@ export default function Page() {
                     <p className="text-[#b3b3b3] mt-2">Tente pesquisar por outro nome de playlist, musica ou artista.</p>
                   </div>
                 ) : searchTab === "all" ? (
-                  <div className="grid gap-8 xl:grid-cols-[320px_minmax(0,1fr)]">
+                  <div className="">
                     <section className="space-y-4">
-                      <h2 className="text-2xl font-bold text-white">Melhor resultado</h2>
-                      {featuredSearchResult && (
-                        <button
-                          type="button"
-                          onClick={() => openSearchResult(featuredSearchResult)}
-                          className="w-full rounded-2xl bg-[#181818] p-5 text-left transition-colors hover:bg-[#282828] cursor-pointer"
-                        >
-                          {featuredSearchResult.image ? (
-                            <img
-                              src={featuredSearchResult.image}
-                              alt={featuredSearchResult.title}
-                              className={`mb-5 h-32 w-32 object-cover shadow-xl ${featuredSearchResult.type === "artist" ? "rounded-full" : "rounded-xl"}`}
-                            />
-                          ) : (
-                            <div className={`mb-5 flex h-32 w-32 items-center justify-center bg-[#333333] text-white shadow-xl ${featuredSearchResult.type === "artist" ? "rounded-full" : "rounded-xl"}`}>
-                              <Music2 size={40} />
-                            </div>
-                          )}
-
-                          <h3 className="text-3xl font-black text-white leading-tight">{featuredSearchResult.title}</h3>
-                          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#b3b3b3]">
-                            <span className="rounded-full bg-[#2a2a2a] px-3 py-1 text-xs font-bold uppercase text-white">
-                              {featuredSearchResult.type === "playlist" ? "Playlist" : featuredSearchResult.type === "artist" ? "Artista" : "Musica"}
-                            </span>
-                            <span>{featuredSearchResult.subtitle}</span>
-                          </div>
-                        </button>
-                      )}
-                    </section>
-
-                    <section className="space-y-4">
-                      <h2 className="text-2xl font-bold text-white">Tudo</h2>
                       <div className="space-y-2">
                         {searchAllResults.map((result) => (
                           <button
