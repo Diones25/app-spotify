@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { SpotifyCard } from "@/components/SpotifyCard";
-import { User, Settings, Clock, Play, MoreHorizontal, Pause } from "lucide-react";
+import { User, Settings, Clock, Play, MoreHorizontal, Pause, Music2 } from "lucide-react";
 import Header from "@/components/Header";
 import HeaderSearch from "@/components/HeaderSearch";
 import PlayerMusic from "@/components/PlayerMusic";
@@ -18,6 +18,48 @@ interface Track {
   artist: string;
   image: string;
   url: string;
+}
+
+type View = "home" | "artists" | "playlists" | "playlist-detail" | "artist-detail" | "search" | "track-detail";
+type SearchTab = "all" | "playlists" | "tracks" | "artists";
+type DetailOrigin = "home" | "playlists" | "artists" | "search";
+
+interface SearchPlaylist {
+  id: string;
+  snippet: {
+    title: string;
+    channelTitle: string;
+    description?: string;
+    publishedAt?: string;
+    thumbnails?: any;
+  };
+}
+
+interface SearchArtist {
+  id: string;
+  snippet: {
+    title: string;
+    description?: string;
+    thumbnails?: any;
+    resourceId: {
+      channelId: string;
+    };
+  };
+}
+
+interface SearchTrack {
+  id: {
+    videoId: string;
+  };
+  snippet: {
+    title: string;
+    channelTitle: string;
+    channelId?: string;
+    description?: string;
+    publishedAt?: string;
+    thumbnails?: any;
+  };
+  duration?: number;
 }
 
 export default function Page() {
@@ -35,14 +77,25 @@ export default function Page() {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [allSubscriptions, setAllSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"home" | "artists" | "playlists" | "playlist-detail" | "artist-detail">("home");
+  const [view, setView] = useState<View>("home");
+  const [detailOrigin, setDetailOrigin] = useState<DetailOrigin>("home");
   const [selectedPlaylist, setSelectedPlaylist] = useState<any>(null);
   const [selectedArtist, setSelectedArtist] = useState<any>(null);
+  const [selectedTrackItem, setSelectedTrackItem] = useState<SearchTrack | null>(null);
   const [playlistTracks, setPlaylistTracks] = useState<any[]>([]);
   const [artistVideos, setArtistVideos] = useState<any[]>([]);
+  const [relatedTracks, setRelatedTracks] = useState<SearchTrack[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [randomColor, setRandomColor] = useState("from-red-600");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [searchTab, setSearchTab] = useState<SearchTab>("all");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchPlaylists, setSearchPlaylists] = useState<SearchPlaylist[]>([]);
+  const [searchArtists, setSearchArtists] = useState<SearchArtist[]>([]);
+  const [searchTracks, setSearchTracks] = useState<SearchTrack[]>([]);
 
   // Estados de Reprodução
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -161,6 +214,85 @@ export default function Page() {
     const s = Math.floor(seconds % 60);
     if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const getThumbnailUrl = (thumbnails: any) => (
+    thumbnails?.high?.url || thumbnails?.medium?.url || thumbnails?.default?.url || ""
+  );
+
+  const getTrackVideoId = (item: any) => item?.contentDetails?.videoId || item?.id?.videoId || item?.id;
+
+  const getArtistChannelId = (artist: any) => artist?.snippet?.resourceId?.channelId || artist?.id;
+
+  const normalizePlaylistSearchResult = (item: any): SearchPlaylist => ({
+    id: item?.id?.playlistId || item?.id,
+    snippet: {
+      title: item?.snippet?.title || "Playlist sem titulo",
+      channelTitle: item?.snippet?.channelTitle || "YouTube",
+      description: item?.snippet?.description,
+      publishedAt: item?.snippet?.publishedAt,
+      thumbnails: item?.snippet?.thumbnails,
+    },
+  });
+
+  const normalizeArtistSearchResult = (item: any): SearchArtist => ({
+    id: item?.id?.channelId || item?.id,
+    snippet: {
+      title: item?.snippet?.title || "Artista sem nome",
+      description: item?.snippet?.description,
+      thumbnails: item?.snippet?.thumbnails,
+      resourceId: {
+        channelId: item?.id?.channelId || item?.snippet?.resourceId?.channelId || item?.id,
+      },
+    },
+  });
+
+  const normalizeTrackSearchResult = (item: any, duration?: number): SearchTrack => ({
+    id: {
+      videoId: getTrackVideoId(item),
+    },
+    snippet: {
+      title: item?.snippet?.title || "Musica sem titulo",
+      channelTitle: item?.snippet?.channelTitle || "YouTube",
+      channelId: item?.snippet?.channelId,
+      description: item?.snippet?.description,
+      publishedAt: item?.snippet?.publishedAt,
+      thumbnails: item?.snippet?.thumbnails,
+    },
+    duration,
+  });
+
+  const fetchVideoMetadata = async (token: string, videoIds: string[]) => {
+    const embeddable = new Set<string>();
+    const durations: Record<string, number> = {};
+
+    for (let i = 0; i < videoIds.length; i += 50) {
+      const chunk = videoIds.slice(i, i + 50);
+      const response = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&id=${chunk.join(",")}`);
+      if (!response) throw new Error("Erro ao buscar detalhes dos videos");
+      const data = await response.json();
+
+      for (const video of data.items || []) {
+        if (video?.status?.embeddable) embeddable.add(video.id);
+        const isoDuration = video?.contentDetails?.duration;
+        if (typeof isoDuration === "string") {
+          durations[video.id] = parseYouTubeDurationSeconds(isoDuration);
+        }
+      }
+    }
+
+    return { embeddable, durations };
+  };
+
+  const buildQueueFromItems = (items: any[], selectedItem?: any) => {
+    const nextItems = [...items];
+    const selectedId = selectedItem ? getTrackVideoId(selectedItem) : null;
+
+    if (selectedItem && selectedId && !nextItems.some((item) => getTrackVideoId(item) === selectedId)) {
+      nextItems.unshift(selectedItem);
+    }
+
+    return nextItems.map(formatTrack);
   };
 
   useEffect(() => {
@@ -503,12 +635,39 @@ export default function Page() {
     setIsVideoSidebarOpen(!isVideoSidebarOpen);
   };
 
+  const getCurrentOrigin = (): DetailOrigin => {
+    if (view === "playlist-detail" || view === "artist-detail" || view === "track-detail") {
+      return detailOrigin;
+    }
+    if (view === "search") return "search";
+    if (view === "playlists") return "playlists";
+    if (view === "artists") return "artists";
+    return "home";
+  };
+
+  const handleMainBack = () => {
+    if (view === "playlist-detail" || view === "artist-detail" || view === "track-detail") {
+      setView(detailOrigin);
+      return;
+    }
+
+    if (view === "playlists" || view === "artists" || view === "search") {
+      setView("home");
+      return;
+    }
+
+    setView("home");
+  };
+
   const getPlaylistName = (): string | undefined => {
     if (view === "playlist-detail" && selectedPlaylist) {
       return selectedPlaylist.snippet.title;
     }
     if (view === "artist-detail" && selectedArtist) {
       return selectedArtist.snippet.title;
+    }
+    if (view === "track-detail" && selectedTrackItem) {
+      return selectedTrackItem.snippet.channelTitle;
     }
     return undefined;
   };
@@ -586,7 +745,81 @@ export default function Page() {
     fetchYouTubeData();
   }, [session?.user?.id, session?.user?.name]);
 
-  const openPlaylistDetail = async (playlist: any) => {
+  const handleSearchSubmit = async () => {
+    const query = searchQuery.trim();
+
+    if (!query) {
+      setSubmittedQuery("");
+      setSearchPlaylists([]);
+      setSearchArtists([]);
+      setSearchTracks([]);
+      setSearchTab("all");
+      setSearchError(null);
+      setView("home");
+      return;
+    }
+
+    setSearchLoading(true);
+    setSearchError(null);
+    setSubmittedQuery(query);
+    setSearchTab("all");
+    setView("search");
+    setSelectedPlaylist(null);
+    setSelectedArtist(null);
+    setSelectedTrackItem(null);
+
+    try {
+      const tokenResult = await getYoutubeToken();
+      if ("error" in tokenResult) {
+        if (isAuthError(tokenResult.code)) {
+          await redirectToLogin();
+          return;
+        }
+        setSearchError("Nao foi possivel pesquisar agora. Tente novamente mais tarde.");
+        return;
+      }
+
+      setYoutubeToken(tokenResult.accessToken);
+
+      const encodedQuery = encodeURIComponent(query);
+      const [playlistResponse, trackResponse, artistResponse] = await Promise.all([
+        fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/search?part=snippet&type=playlist&maxResults=18&q=${encodedQuery}`),
+        fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=20&q=${encodedQuery}`),
+        fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=18&q=${encodedQuery}`),
+      ]);
+
+      if (!playlistResponse || !trackResponse || !artistResponse) {
+        setSearchError("Nao foi possivel carregar os resultados da pesquisa.");
+        return;
+      }
+
+      const [playlistData, trackData, artistData] = await Promise.all([
+        playlistResponse.json(),
+        trackResponse.json(),
+        artistResponse.json(),
+      ]);
+
+      const rawTracks = trackData.items || [];
+      const videoIds = rawTracks.map(getTrackVideoId).filter(Boolean);
+      const { embeddable, durations } = await fetchVideoMetadata(tokenResult.accessToken, videoIds);
+      const nextTracks = rawTracks
+        .filter((item: any) => embeddable.has(getTrackVideoId(item)))
+        .map((item: any) => normalizeTrackSearchResult(item, durations[getTrackVideoId(item)] || 0));
+
+      setVideoDurations((prev) => ({ ...prev, ...durations }));
+      setSearchPlaylists((playlistData.items || []).map(normalizePlaylistSearchResult));
+      setSearchArtists((artistData.items || []).map(normalizeArtistSearchResult));
+      setSearchTracks(nextTracks);
+    } catch (err) {
+      console.error("Erro ao pesquisar no YouTube:", err);
+      setSearchError("Erro ao buscar playlists, musicas e artistas.");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const openPlaylistDetail = async (playlist: any, origin: DetailOrigin = "home") => {
+    setDetailOrigin(origin);
     setSelectedPlaylist(playlist);
     setView("playlist-detail");
     setLoadingTracks(true);
@@ -608,11 +841,9 @@ export default function Page() {
       }
       const token = tokenResult.accessToken;
 
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlist.id}&maxResults=50`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error("Erro ao buscar playlist");
-      const trackData = await res.json();
+      const response = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlist.id}&maxResults=50`);
+      if (!response) throw new Error("Erro ao buscar playlist");
+      const trackData = await response.json();
       const items = trackData.items || [];
       const videoIds = items
         .map((it: any) => it?.contentDetails?.videoId)
@@ -623,23 +854,7 @@ export default function Page() {
         return;
       }
 
-      const embeddable = new Set<string>();
-      const durations: Record<string, number> = {};
-      for (let i = 0; i < videoIds.length; i += 50) {
-        const chunk = videoIds.slice(i, i + 50);
-        const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${chunk.join(",")}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!vRes.ok) throw new Error("Erro ao buscar detalhes dos vídeos");
-        const vData = await vRes.json();
-        for (const v of vData.items || []) {
-          if (v?.status?.embeddable) embeddable.add(v.id);
-          const iso = v?.contentDetails?.duration;
-          if (typeof iso === "string") {
-            durations[v.id] = parseYouTubeDurationSeconds(iso);
-          }
-        }
-      }
+      const { embeddable, durations } = await fetchVideoMetadata(token, videoIds);
 
       const playableItems = items.filter((it: any) => embeddable.has(it?.contentDetails?.videoId));
       setPlaylistTracks(playableItems);
@@ -651,7 +866,8 @@ export default function Page() {
     }
   };
 
-  const openArtistDetail = async (artist: any) => {
+  const openArtistDetail = async (artist: any, origin: DetailOrigin = "home") => {
+    setDetailOrigin(origin);
     setSelectedArtist(artist);
     setView("artist-detail");
     setLoadingTracks(true);
@@ -674,36 +890,81 @@ export default function Page() {
       const token = tokenResult.accessToken;
 
       // Buscar vídeos do canal (simulando "músicas populares")
-      const channelId = artist.snippet.resourceId.channelId;
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=viewCount&type=video&videoEmbeddable=true`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error("Erro ao buscar vídeos do artista");
-      const videoData = await res.json();
+      const channelId = getArtistChannelId(artist);
+      const response = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=viewCount&type=video&videoEmbeddable=true`);
+      if (!response) throw new Error("Erro ao buscar videos do artista");
+      const videoData = await response.json();
       const items = videoData.items || [];
       setArtistVideos(items);
 
       const ids = items.map((it: any) => it?.id?.videoId).filter(Boolean);
       if (ids.length > 0) {
-        const durations: Record<string, number> = {};
-        for (let i = 0; i < ids.length; i += 50) {
-          const chunk = ids.slice(i, i + 50);
-          const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&id=${chunk.join(",")}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (!vRes.ok) throw new Error("Erro ao buscar detalhes dos vídeos");
-          const vData = await vRes.json();
-          for (const v of vData.items || []) {
-            const iso = v?.contentDetails?.duration;
-            if (typeof iso === "string") {
-              durations[v.id] = parseYouTubeDurationSeconds(iso);
-            }
-          }
-        }
+        const { durations } = await fetchVideoMetadata(token, ids);
         setVideoDurations(prev => ({ ...prev, ...durations }));
       }
     } catch (err) {
       console.error("Erro ao buscar vídeos do artista:", err);
+    } finally {
+      setLoadingTracks(false);
+    }
+  };
+
+  const openTrackDetail = async (item: SearchTrack, origin: DetailOrigin = "search") => {
+    setDetailOrigin(origin);
+    setSelectedTrackItem(item);
+    setView("track-detail");
+    setLoadingTracks(true);
+
+    const selectedTrack = formatTrack(item);
+    playTrack(selectedTrack, [selectedTrack]);
+
+    const color = spotifyColors[Math.floor(Math.random() * spotifyColors.length)];
+    setRandomColor(color);
+
+    try {
+      const tokenResult = await getYoutubeToken();
+      if ("error" in tokenResult) {
+        setLoadingTracks(false);
+        if (isAuthError(tokenResult.code)) {
+          await redirectToLogin();
+          return;
+        }
+        setError("Token do YouTube expirado. Faca login novamente.");
+        return;
+      }
+
+      const token = tokenResult.accessToken;
+      const channelId = item.snippet.channelId;
+      let nextItems: SearchTrack[] = [item];
+
+      if (channelId) {
+        const response = await fetchWithRetry(token, `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=15&order=viewCount&type=video&videoEmbeddable=true`);
+        if (!response) throw new Error("Erro ao buscar musicas relacionadas");
+        const relatedData = await response.json();
+        const rawItems = relatedData.items || [];
+        const ids = rawItems.map(getTrackVideoId).filter(Boolean);
+        const { embeddable, durations } = await fetchVideoMetadata(token, ids);
+
+        nextItems = rawItems
+          .filter((track: any) => embeddable.has(getTrackVideoId(track)))
+          .map((track: any) => normalizeTrackSearchResult(track, durations[getTrackVideoId(track)] || 0));
+
+        if (!nextItems.some((track) => track.id.videoId === item.id.videoId)) {
+          nextItems.unshift(item);
+        }
+
+        setVideoDurations((prev) => ({
+          ...prev,
+          ...durations,
+          [item.id.videoId]: item.duration || prev[item.id.videoId] || 0,
+        }));
+      }
+
+      setRelatedTracks(nextItems);
+      playTrack(selectedTrack, buildQueueFromItems(nextItems, item));
+    } catch (err) {
+      console.error("Erro ao abrir detalhe da musica:", err);
+      setRelatedTracks([item]);
     } finally {
       setLoadingTracks(false);
     }
@@ -755,6 +1016,80 @@ export default function Page() {
     }
   };
 
+  const featuredSearchResult = searchPlaylists[0]
+    ? {
+        key: `playlist-${searchPlaylists[0].id}`,
+        type: "playlist" as const,
+        title: searchPlaylists[0].snippet.title,
+        subtitle: `Playlist • ${searchPlaylists[0].snippet.channelTitle}`,
+        image: getThumbnailUrl(searchPlaylists[0].snippet.thumbnails),
+        data: searchPlaylists[0],
+      }
+    : searchTracks[0]
+      ? {
+          key: `track-${searchTracks[0].id.videoId}`,
+          type: "track" as const,
+          title: searchTracks[0].snippet.title,
+          subtitle: `Musica • ${searchTracks[0].snippet.channelTitle}`,
+          image: getThumbnailUrl(searchTracks[0].snippet.thumbnails),
+          data: searchTracks[0],
+        }
+      : searchArtists[0]
+        ? {
+            key: `artist-${searchArtists[0].id}`,
+            type: "artist" as const,
+            title: searchArtists[0].snippet.title,
+            subtitle: "Artista",
+            image: getThumbnailUrl(searchArtists[0].snippet.thumbnails),
+            data: searchArtists[0],
+          }
+        : null;
+
+  const searchAllResults = [
+    ...searchPlaylists.map((playlist) => ({
+      key: `playlist-${playlist.id}`,
+      type: "playlist" as const,
+      title: playlist.snippet.title,
+      subtitle: playlist.snippet.channelTitle,
+      badge: "Playlist",
+      image: getThumbnailUrl(playlist.snippet.thumbnails),
+      data: playlist,
+    })),
+    ...searchTracks.map((track) => ({
+      key: `track-${track.id.videoId}`,
+      type: "track" as const,
+      title: track.snippet.title,
+      subtitle: track.snippet.channelTitle,
+      badge: "Musica",
+      duration: track.duration,
+      image: getThumbnailUrl(track.snippet.thumbnails),
+      data: track,
+    })),
+    ...searchArtists.map((artist) => ({
+      key: `artist-${artist.id}`,
+      type: "artist" as const,
+      title: artist.snippet.title,
+      subtitle: "Canal do YouTube",
+      badge: "Artista",
+      image: getThumbnailUrl(artist.snippet.thumbnails),
+      data: artist,
+    })),
+  ];
+
+  const openSearchResult = (result: { type: "playlist" | "track" | "artist"; data: any }) => {
+    if (result.type === "playlist") {
+      openPlaylistDetail(result.data, "search");
+      return;
+    }
+
+    if (result.type === "artist") {
+      openArtistDetail(result.data, "search");
+      return;
+    }
+
+    openTrackDetail(result.data, "search");
+  };
+
   if (isPending) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-white">
@@ -769,7 +1104,12 @@ export default function Page() {
 
   return (
     <>
-      <HeaderSearch />
+      <HeaderSearch
+        value={searchQuery}
+        onChange={setSearchQuery}
+        onSubmit={handleSearchSubmit}
+        onHomeClick={() => setView("home")}
+      />
       <div className="flex h-[calc(100dvh-10rem)] min-h-0 bg-black overflow-hidden font-sans pr-2">
         {/* Sidebar */}
         {!isVideoMaximized && (
@@ -779,8 +1119,8 @@ export default function Page() {
             subscriptions={subscriptions}
             activeFilter={sidebarFilter}
             onFilterChange={setSidebarFilter}
-            onPlaylistClick={openPlaylistDetail}
-            onArtistClick={openArtistDetail}
+            onPlaylistClick={(playlist) => openPlaylistDetail(playlist, getCurrentOrigin())}
+            onArtistClick={(artist) => openArtistDetail(artist, getCurrentOrigin())}
           />
         )}
 
@@ -788,7 +1128,7 @@ export default function Page() {
         {!isVideoMaximized && (
         <main className="ml-0 relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-linear-to-b from-[#1e1e1e] to-[#121212] transition-all duration-300">
           {/* Header Superior */}
-          <Header setView={setView} />
+          <Header onBack={handleMainBack} />
 
           {/* Scrollable Content */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
@@ -851,7 +1191,7 @@ export default function Page() {
                           title={pl.snippet.title}
                           subtitle={`De ${pl.snippet.channelTitle}`}
                           image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
-                          onClick={() => openPlaylistDetail(pl)}
+                          onClick={() => openPlaylistDetail(pl, "home")}
                         />
                       ))
                     )}
@@ -880,13 +1220,193 @@ export default function Page() {
                           subtitle="Canal"
                           type="artist"
                           image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
-                          onClick={() => openArtistDetail(sub)}
+                          onClick={() => openArtistDetail(sub, "home")}
                         />
                       ))
                     )}
                   </div>
                 </section>
               </>
+            ) : view === "search" ? (
+              <section className="space-y-6">
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-white">Resultados para &quot;{submittedQuery}&quot;</h1>
+                    <p className="text-sm text-[#b3b3b3] mt-1">Playlists, musicas e artistas encontrados no YouTube.</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "all", label: "Tudo" },
+                      { value: "playlists", label: "Playlists" },
+                      { value: "tracks", label: "Musicas" },
+                      { value: "artists", label: "Artistas" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.value}
+                        type="button"
+                        onClick={() => setSearchTab(tab.value as SearchTab)}
+                        className={`${searchTab === tab.value ? "bg-white text-black" : "bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]"} px-4 py-2 rounded-full text-sm font-bold transition-colors cursor-pointer`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {searchLoading ? (
+                  <div className="space-y-4">
+                    <div className="h-42 rounded-xl bg-[#181818] animate-pulse" />
+                    <div className="h-20 rounded-xl bg-[#181818] animate-pulse" />
+                    <div className="h-20 rounded-xl bg-[#181818] animate-pulse" />
+                  </div>
+                ) : searchError ? (
+                  <div className="rounded-2xl border border-white/10 bg-[#181818] p-8 text-center">
+                    <h2 className="text-xl font-bold text-white">Nao foi possivel carregar a pesquisa</h2>
+                    <p className="text-[#b3b3b3] mt-2">{searchError}</p>
+                  </div>
+                ) : searchAllResults.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-[#181818] p-8 text-center">
+                    <h2 className="text-xl font-bold text-white">Nenhum resultado encontrado</h2>
+                    <p className="text-[#b3b3b3] mt-2">Tente pesquisar por outro nome de playlist, musica ou artista.</p>
+                  </div>
+                ) : searchTab === "all" ? (
+                  <div className="grid gap-8 xl:grid-cols-[320px_minmax(0,1fr)]">
+                    <section className="space-y-4">
+                      <h2 className="text-2xl font-bold text-white">Melhor resultado</h2>
+                      {featuredSearchResult && (
+                        <button
+                          type="button"
+                          onClick={() => openSearchResult(featuredSearchResult)}
+                          className="w-full rounded-2xl bg-[#181818] p-5 text-left transition-colors hover:bg-[#282828] cursor-pointer"
+                        >
+                          {featuredSearchResult.image ? (
+                            <img
+                              src={featuredSearchResult.image}
+                              alt={featuredSearchResult.title}
+                              className={`mb-5 h-32 w-32 object-cover shadow-xl ${featuredSearchResult.type === "artist" ? "rounded-full" : "rounded-xl"}`}
+                            />
+                          ) : (
+                            <div className={`mb-5 flex h-32 w-32 items-center justify-center bg-[#333333] text-white shadow-xl ${featuredSearchResult.type === "artist" ? "rounded-full" : "rounded-xl"}`}>
+                              <Music2 size={40} />
+                            </div>
+                          )}
+
+                          <h3 className="text-3xl font-black text-white leading-tight">{featuredSearchResult.title}</h3>
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#b3b3b3]">
+                            <span className="rounded-full bg-[#2a2a2a] px-3 py-1 text-xs font-bold uppercase text-white">
+                              {featuredSearchResult.type === "playlist" ? "Playlist" : featuredSearchResult.type === "artist" ? "Artista" : "Musica"}
+                            </span>
+                            <span>{featuredSearchResult.subtitle}</span>
+                          </div>
+                        </button>
+                      )}
+                    </section>
+
+                    <section className="space-y-4">
+                      <h2 className="text-2xl font-bold text-white">Tudo</h2>
+                      <div className="space-y-2">
+                        {searchAllResults.map((result) => (
+                          <button
+                            key={result.key}
+                            type="button"
+                            onClick={() => openSearchResult(result)}
+                            className="flex w-full items-center gap-4 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/10 cursor-pointer"
+                          >
+                            {result.image ? (
+                              <img
+                                src={result.image}
+                                alt={result.title}
+                                className={`h-14 w-14 object-cover ${result.type === "artist" ? "rounded-full" : "rounded-md"}`}
+                              />
+                            ) : (
+                              <div className={`flex h-14 w-14 items-center justify-center bg-[#333333] text-white ${result.type === "artist" ? "rounded-full" : "rounded-md"}`}>
+                                <Music2 size={20} />
+                              </div>
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-lg font-bold text-white">{result.title}</div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[#b3b3b3]">
+                                <span className="rounded-md bg-[#2a2a2a] px-2 py-0.5 text-xs font-bold text-white">{result.badge}</span>
+                                <span className="truncate">{result.subtitle}</span>
+                              </div>
+                            </div>
+
+                            {result.type === "track" && (
+                              <span className="text-sm text-[#b3b3b3]">{formatDuration(result.duration)}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                ) : searchTab === "playlists" ? (
+                  <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {searchPlaylists.map((playlist) => (
+                      <SpotifyCard
+                        key={playlist.id}
+                        title={playlist.snippet.title}
+                        subtitle={`De ${playlist.snippet.channelTitle}`}
+                        image={getThumbnailUrl(playlist.snippet.thumbnails)}
+                        onClick={() => openPlaylistDetail(playlist, "search")}
+                      />
+                    ))}
+                  </div>
+                ) : searchTab === "tracks" ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-[32px_4fr_3fr_90px] gap-4 px-4 py-2 border-b border-white/10 text-[#b3b3b3] text-sm font-medium uppercase tracking-wider">
+                      <span>#</span>
+                      <span>Titulo</span>
+                      <span>Artista</span>
+                      <div className="flex justify-end"><Clock size={16} /></div>
+                    </div>
+
+                    <div className="space-y-1">
+                      {searchTracks.map((track, index) => {
+                        const isCurrent = currentTrack?.id === track.id.videoId;
+
+                        return (
+                          <button
+                            key={track.id.videoId}
+                            type="button"
+                            onClick={() => openTrackDetail(track, "search")}
+                            className="grid w-full grid-cols-[32px_4fr_3fr_90px] items-center gap-4 rounded-lg px-4 py-2 text-left transition-colors hover:bg-white/10 cursor-pointer"
+                          >
+                            <span className={`text-sm ${isCurrent ? "text-[#1ed760]" : "text-[#b3b3b3]"}`}>{index + 1}</span>
+                            <div className="flex min-w-0 items-center gap-3">
+                              <img
+                                src={getThumbnailUrl(track.snippet.thumbnails)}
+                                alt={track.snippet.title}
+                                className="h-12 w-12 rounded-md object-cover"
+                              />
+                              <div className="min-w-0">
+                                <div className={`truncate font-medium ${isCurrent ? "text-[#1ed760]" : "text-white"}`}>{track.snippet.title}</div>
+                                <div className="truncate text-xs text-[#b3b3b3]">Clique para abrir e tocar</div>
+                              </div>
+                            </div>
+                            <span className="truncate text-sm text-[#b3b3b3]">{track.snippet.channelTitle}</span>
+                            <div className="flex justify-end text-sm text-[#b3b3b3]">{formatDuration(track.duration)}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {searchArtists.map((artist) => (
+                      <SpotifyCard
+                        key={artist.id}
+                        title={artist.snippet.title}
+                        subtitle="Artista"
+                        type="artist"
+                        image={getThumbnailUrl(artist.snippet.thumbnails)}
+                        onClick={() => openArtistDetail(artist, "search")}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
             ) : view === "playlist-detail" && selectedPlaylist ? (
               /* Visualização Detalhada da Playlist */
               <div className="-m-6">
@@ -1123,6 +1643,131 @@ export default function Page() {
                   </section>
                 </div>
               </div>
+            ) : view === "track-detail" && selectedTrackItem ? (
+              <div className="-m-6">
+                <div className={`bg-linear-to-b ${randomColor} to-[#121212] p-6 pt-12 flex flex-col md:flex-row items-end gap-6`}>
+                  <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl rounded-md overflow-hidden shrink-0 bg-[#282828]">
+                    {getThumbnailUrl(selectedTrackItem.snippet.thumbnails) ? (
+                      <img
+                        src={getThumbnailUrl(selectedTrackItem.snippet.thumbnails)}
+                        alt={selectedTrackItem.snippet.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white">
+                        <Music2 size={72} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 pb-2">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Musica</span>
+                    <h1 className="text-4xl md:text-7xl font-black text-white tracking-tighter mb-2">{selectedTrackItem.snippet.title}</h1>
+                    <div className="flex flex-wrap items-center gap-2 text-white/90 text-sm">
+                      <span className="font-bold">{selectedTrackItem.snippet.channelTitle}</span>
+                      <span>•</span>
+                      <span>{formatDuration(selectedTrackItem.duration || videoDurations[selectedTrackItem.id.videoId])}</span>
+                      {selectedTrackItem.snippet.publishedAt && (
+                        <>
+                          <span>•</span>
+                          <span>
+                            {new Date(selectedTrackItem.snippet.publishedAt).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#121212]/30 backdrop-blur-sm p-6 space-y-6 min-h-screen">
+                  <div className="flex items-center gap-8">
+                    <button
+                      onClick={() => {
+                        const selectedTrack = formatTrack(selectedTrackItem);
+                        const nextQueue = buildQueueFromItems(relatedTracks, selectedTrackItem);
+
+                        if (currentTrack?.id === selectedTrack.id) {
+                          togglePlay();
+                        } else {
+                          playTrack(selectedTrack, nextQueue);
+                        }
+                      }}
+                      className="bg-[#1ed760] p-4 rounded-full hover:scale-105 transition-transform text-black shadow-lg cursor-pointer"
+                    >
+                      {currentTrack?.id === selectedTrackItem.id.videoId && isPlaying ? (
+                        <Pause fill="black" size={28} />
+                      ) : (
+                        <Play fill="black" size={28} />
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openArtistDetail({
+                        id: selectedTrackItem.snippet.channelId || selectedTrackItem.id.videoId,
+                        snippet: {
+                          title: selectedTrackItem.snippet.channelTitle,
+                          thumbnails: selectedTrackItem.snippet.thumbnails,
+                          description: selectedTrackItem.snippet.description,
+                          resourceId: {
+                            channelId: selectedTrackItem.snippet.channelId || selectedTrackItem.id.videoId,
+                          },
+                        },
+                      }, detailOrigin)}
+                      className="border border-[#878787] text-white px-4 py-1 rounded-full text-sm font-bold hover:border-white transition-colors cursor-pointer"
+                    >
+                      Ver artista
+                    </button>
+                  </div>
+
+                  <section>
+                    <h2 className="text-2xl font-bold text-white mb-4">Mais musicas do artista</h2>
+                    <div className="space-y-1">
+                      {loadingTracks ? (
+                        Array(5).fill(0).map((_, i) => (
+                          <div key={i} className="h-14 bg-[#181818] rounded-md animate-pulse" />
+                        ))
+                      ) : (
+                        relatedTracks.map((item, i) => {
+                          const track = formatTrack(item);
+                          const isCurrent = currentTrack?.id === track.id;
+
+                          return (
+                            <button
+                              key={item.id.videoId}
+                              type="button"
+                              data-track-id={track.id}
+                              onClick={() => openTrackDetail(item, detailOrigin)}
+                              className="flex w-full items-center justify-between rounded-md p-2 text-left transition-colors hover:bg-white/10 cursor-pointer"
+                            >
+                              <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <span className={`w-4 text-center text-sm ${isCurrent ? "text-[#1ed760]" : "text-[#b3b3b3]"}`}>
+                                  {i + 1}
+                                </span>
+                                <img src={track.image} alt="" className="w-10 h-10 rounded object-cover" />
+                                <div className="flex flex-col min-w-0">
+                                  <span className={`font-medium truncate ${isCurrent ? "text-[#1ed760]" : "text-white"}`}>
+                                    {track.title}
+                                  </span>
+                                  <span className="text-[#b3b3b3] text-xs truncate">{track.artist}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-8">
+                                <span className="text-[#b3b3b3] text-sm hidden md:block">Videoclipe</span>
+                                <span className="text-[#b3b3b3] text-sm mr-4">{formatDuration(item.duration || videoDurations[item.id.videoId])}</span>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </section>
+                </div>
+              </div>
             ) : view === "artists" ? (
               /* Visualização "Mostrar Tudo" de Artistas */
               <section>
@@ -1137,7 +1782,7 @@ export default function Page() {
                       subtitle="Artista"
                       type="artist"
                       image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
-                      onClick={() => openArtistDetail(sub)}
+                      onClick={() => openArtistDetail(sub, "artists")}
                     />
                   ))}
                 </div>
@@ -1155,7 +1800,7 @@ export default function Page() {
                       title={pl.snippet.title}
                       subtitle={`De ${pl.snippet.channelTitle}`}
                       image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
-                      onClick={() => openPlaylistDetail(pl)}
+                      onClick={() => openPlaylistDetail(pl, "playlists")}
                     />
                   ))}
                 </div>

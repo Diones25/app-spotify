@@ -1,19 +1,19 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {
-    setView: any;
+    onBack: () => void;
 }
 
-export default function Header({ setView }: Props) {
+export default function Header({ onBack }: Props) {
     return (
         <header className="flex items-center justify-between p-4 sticky top-0 z-10 bg-[#121212]/50 backdrop-blur-md">
             <div className="flex items-center gap-2">
-                <button onClick={() => setView("home")}
+                <button onClick={onBack}
                     className="p-1 bg-black/40 rounded-full text-white/70 hover:text-white"
                 >
                     <ChevronLeft className="cursor-pointer" size={24} />
                 </button>
-                <button className="p-1 bg-black/40 rounded-full text-white/70 hover:text-white">
+                <button className="p-1 bg-black/40 rounded-full text-white/40 cursor-not-allowed" disabled>
                     <ChevronRight className="cursor-pointer" size={24} />
                 </button>
             </div>
