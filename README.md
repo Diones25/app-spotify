@@ -114,10 +114,36 @@ BETTER_AUTH_SECRET=<your-secret>
 BETTER_AUTH_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=<your-client-id>
 GOOGLE_CLIENT_SECRET=<your-client-secret>
+DATABASE_URL=<your-database-url>
 ```
 
 > **BETTER_AUTH_SECRET**: generate with `openssl rand -base64 32`.\
 > **Google OAuth**: add `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI.
+
+### Production variables on Vercel
+
+Set these variables in the Vercel project for the **Production** environment:
+
+```env
+BETTER_AUTH_SECRET=<same secret used by Better Auth>
+BETTER_AUTH_URL=https://app-spotify-rouge.vercel.app
+GOOGLE_CLIENT_ID=<your-client-id>
+GOOGLE_CLIENT_SECRET=<your-client-secret>
+DATABASE_URL=<your-postgres-url>
+```
+
+Production Google OAuth configuration should include:
+
+- Authorized JavaScript origin: `https://app-spotify-rouge.vercel.app`
+- Authorized redirect URI: `https://app-spotify-rouge.vercel.app/api/auth/callback/google`
+
+Vercel checklist:
+
+1. Open `app-spotify` in Vercel.
+2. Go to `Settings -> Environment Variables`.
+3. Confirm the five variables above exist in `Production`.
+4. Make sure `BETTER_AUTH_URL` is exactly `https://app-spotify-rouge.vercel.app`.
+5. Redeploy after any environment variable change.
 
 ### 4. Configure the database
 
