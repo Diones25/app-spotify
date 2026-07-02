@@ -5,9 +5,12 @@ import { prisma } from "./db";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
-        provider: "sqlite",
+        provider: "postgresql",
     }),
-    trustedOrigins: ["http://localhost:3000"],
+    trustedOrigins: [
+        "http://localhost:3000",
+        "https://app-spotify-rouge.vercel.app",
+    ],
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
