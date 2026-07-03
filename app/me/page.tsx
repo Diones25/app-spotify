@@ -100,6 +100,11 @@ export default function Page() {
   const [allPlaylists, setAllPlaylists] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [allSubscriptions, setAllSubscriptions] = useState<any[]>([]);
+  const [sidebarPageTokenPlaylists, setSidebarPageTokenPlaylists] = useState<string | null>(null);
+  const [sidebarPageTokenSubscriptions, setSidebarPageTokenSubscriptions] = useState<string | null>(null);
+  const [sidebarLoadingMore, setSidebarLoadingMore] = useState(false);
+  const [hasMorePlaylists, setHasMorePlaylists] = useState(false);
+  const [hasMoreSubscriptions, setHasMoreSubscriptions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("home");
   const [detailOrigin, setDetailOrigin] = useState<DetailOrigin>("home");
@@ -910,25 +915,29 @@ export default function Page() {
 
         setYoutubeToken(tokenResult.accessToken);
 
-        // Buscar Playlists
-        const plRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
-        if (!plRes) return;
+        // Buscar Playlists via API route (sidebar)
+        const plRes = await fetch("/api/youtube/playlists?maxResults=12");
+        if (!plRes.ok) return;
         const plData = await plRes.json();
         setPlaylists(plData.items || []);
+        setSidebarPageTokenPlaylists(plData.nextPageToken);
+        setHasMorePlaylists(!!plData.nextPageToken);
 
-        // Buscar Playlists (todas)
+        // Buscar Playlists (todas) para Home view
         const plAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
         if (!plAllRes) return;
         const plAllData = await plAllRes.json();
         setAllPlaylists(plAllData.items || []);
 
-        // Buscar Inscrições (Artistas)
-        const subRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
-        if (!subRes) return;
+        // Buscar Inscrições (Artistas) via API route (sidebar)
+        const subRes = await fetch("/api/youtube/subscriptions?maxResults=12");
+        if (!subRes.ok) return;
         const subData = await subRes.json();
         setSubscriptions(subData.items || []);
+        setSidebarPageTokenSubscriptions(subData.nextPageToken);
+        setHasMoreSubscriptions(!!subData.nextPageToken);
 
-        // Buscar todas as Inscrições (Artistas)
+        // Buscar todas as Inscrições (Artistas) para Home view
         const subAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
         if (!subAllRes) return;
         const subAllData = await subAllRes.json();
@@ -1190,18 +1199,28 @@ export default function Page() {
             return;
           }
           setYoutubeToken(tokenResult.accessToken);
-          const plRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=12`);
-          if (!plRes) { setLoading(false); return; }
+
+          // Buscar Playlists via API route (sidebar)
+          const plRes = await fetch("/api/youtube/playlists?maxResults=12");
+          if (!plRes.ok) { setLoading(false); return; }
           const plData = await plRes.json();
           setPlaylists(plData.items || []);
+          setSidebarPageTokenPlaylists(plData.nextPageToken);
+          setHasMorePlaylists(!!plData.nextPageToken);
+
           const plAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
           if (!plAllRes) { setLoading(false); return; }
           const plAllData = await plAllRes.json();
           setAllPlaylists(plAllData.items || []);
-          const subRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=12`);
-          if (!subRes) { setLoading(false); return; }
+
+          // Buscar Inscricoes via API route (sidebar)
+          const subRes = await fetch("/api/youtube/subscriptions?maxResults=12");
+          if (!subRes.ok) { setLoading(false); return; }
           const subData = await subRes.json();
           setSubscriptions(subData.items || []);
+          setSidebarPageTokenSubscriptions(subData.nextPageToken);
+          setHasMoreSubscriptions(!!subData.nextPageToken);
+
           const subAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
           if (!subAllRes) { setLoading(false); return; }
           const subAllData = await subAllRes.json();
@@ -1213,6 +1232,40 @@ export default function Page() {
         }
       }
       retryFetch();
+    }
+  };
+
+  const loadMorePlaylists = async () => {
+    if (!sidebarPageTokenPlaylists || sidebarLoadingMore) return;
+    setSidebarLoadingMore(true);
+    try {
+      const res = await fetch(`/api/youtube/playlists?maxResults=12&pageToken=${sidebarPageTokenPlaylists}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setPlaylists((prev) => [...prev, ...(data.items || [])]);
+      setSidebarPageTokenPlaylists(data.nextPageToken);
+      setHasMorePlaylists(!!data.nextPageToken);
+    } catch (err) {
+      console.error("Erro ao carregar mais playlists:", err);
+    } finally {
+      setSidebarLoadingMore(false);
+    }
+  };
+
+  const loadMoreSubscriptions = async () => {
+    if (!sidebarPageTokenSubscriptions || sidebarLoadingMore) return;
+    setSidebarLoadingMore(true);
+    try {
+      const res = await fetch(`/api/youtube/subscriptions?maxResults=12&pageToken=${sidebarPageTokenSubscriptions}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setSubscriptions((prev) => [...prev, ...(data.items || [])]);
+      setSidebarPageTokenSubscriptions(data.nextPageToken);
+      setHasMoreSubscriptions(!!data.nextPageToken);
+    } catch (err) {
+      console.error("Erro ao carregar mais inscricoes:", err);
+    } finally {
+      setSidebarLoadingMore(false);
     }
   };
 
@@ -1321,6 +1374,11 @@ export default function Page() {
             onFilterChange={setSidebarFilter}
             onPlaylistClick={(playlist) => openPlaylistDetail(playlist, getCurrentOrigin())}
             onArtistClick={(artist) => openArtistDetail(artist, getCurrentOrigin())}
+            hasMorePlaylists={hasMorePlaylists}
+            hasMoreSubscriptions={hasMoreSubscriptions}
+            loadingMore={sidebarLoadingMore}
+            onLoadMorePlaylists={loadMorePlaylists}
+            onLoadMoreSubscriptions={loadMoreSubscriptions}
           />
         )}
 
@@ -1363,9 +1421,9 @@ export default function Page() {
                     <span className="text-xs font-bold text-white tracking-wider">Perfil</span>
                     <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter">{session.user?.name}</h1>
                     <div className="flex items-center gap-2 text-white/90 text-sm mt-2">
-                      <span className="font-bold">{playlists.length} playlists públicas</span>
+                      <span className="font-bold">{allPlaylists.length} playlists públicas</span>
                       <span>•</span>
-                      <span className="font-bold">{subscriptions.length} seguindo</span>
+                      <span className="font-bold">{allSubscriptions.length} seguindo</span>
                     </div>
                   </div>
                 </section>
@@ -1385,7 +1443,7 @@ export default function Page() {
                     {loading ? (
                       Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
                     ) : (
-                      playlists.map((pl) => (
+                      allPlaylists.slice(0, 12).map((pl) => (
                         <SpotifyCard
                           key={pl.id}
                           title={pl.snippet.title}
@@ -1413,7 +1471,7 @@ export default function Page() {
                     {loading ? (
                       Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
                     ) : (
-                      subscriptions.map((sub) => (
+                      allSubscriptions.slice(0, 12).map((sub) => (
                         <SpotifyCard
                           key={sub.id}
                           title={sub.snippet.title}
