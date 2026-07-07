@@ -1,4 +1,4 @@
-import { Search, Home } from "lucide-react";
+import { Search, Home, X } from "lucide-react";
 import SpotifySvg from "./SpotifySvg";
 import Link from "next/link";
 
@@ -48,6 +48,16 @@ export default function HeaderSearch({ value, onChange, onSubmit, onHomeClick }:
             onChange={(event) => onChange(event.target.value)}
             className="w-full h-12 rounded-full bg-[#1f1f1f] pl-12 pr-16 text-white text-sm border-none outline-none hover:bg-[#2a2a2a] focus:ring-2 focus:ring-white/10 transition-all placeholder:text-[#757575]"
           />
+
+          {value && (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#b3b3b3] hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
       </form>
 
