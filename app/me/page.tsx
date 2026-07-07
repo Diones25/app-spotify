@@ -105,6 +105,12 @@ export default function Page() {
   const [sidebarLoadingMore, setSidebarLoadingMore] = useState(false);
   const [hasMorePlaylists, setHasMorePlaylists] = useState(false);
   const [hasMoreSubscriptions, setHasMoreSubscriptions] = useState(false);
+  const [mainPageTokenPlaylists, setMainPageTokenPlaylists] = useState<string | null>(null);
+  const [mainPageTokenSubscriptions, setMainPageTokenSubscriptions] = useState<string | null>(null);
+  const [mainLoadingMorePlaylists, setMainLoadingMorePlaylists] = useState(false);
+  const [mainLoadingMoreSubscriptions, setMainLoadingMoreSubscriptions] = useState(false);
+  const [mainHasMorePlaylists, setMainHasMorePlaylists] = useState(false);
+  const [mainHasMoreSubscriptions, setMainHasMoreSubscriptions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("home");
   const [detailOrigin, setDetailOrigin] = useState<DetailOrigin>("home");
@@ -159,6 +165,7 @@ export default function Page() {
   const [playerBootstrapNonce, setPlayerBootstrapNonce] = useState(0);
   const fetchedForUserId = useRef<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const mainSentinelRef = useRef<HTMLDivElement>(null);
   const [sidebarFilter, setSidebarFilter] = useState<"all" | "playlists" | "artists">("all");
 
   const playerContainerRef = useCallback((element: HTMLDivElement | null) => {
@@ -923,11 +930,13 @@ export default function Page() {
         setSidebarPageTokenPlaylists(plData.nextPageToken);
         setHasMorePlaylists(!!plData.nextPageToken);
 
-        // Buscar Playlists (todas) para Home view
-        const plAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
+        // Buscar Playlists para Home view (paginação infinita)
+        const plAllRes = await fetchWithRetry(tokenResult.accessToken, "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=24");
         if (!plAllRes) return;
         const plAllData = await plAllRes.json();
         setAllPlaylists(plAllData.items || []);
+        setMainPageTokenPlaylists(plAllData.nextPageToken || null);
+        setMainHasMorePlaylists(!!plAllData.nextPageToken);
 
         // Buscar Inscrições (Artistas) via API route (sidebar)
         const subRes = await fetch("/api/youtube/subscriptions?maxResults=12");
@@ -937,11 +946,13 @@ export default function Page() {
         setSidebarPageTokenSubscriptions(subData.nextPageToken);
         setHasMoreSubscriptions(!!subData.nextPageToken);
 
-        // Buscar todas as Inscrições (Artistas) para Home view
-        const subAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
+        // Buscar Inscrições (Artistas) para Home view (paginação infinita)
+        const subAllRes = await fetchWithRetry(tokenResult.accessToken, "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=24");
         if (!subAllRes) return;
         const subAllData = await subAllRes.json();
         setAllSubscriptions(subAllData.items || []);
+        setMainPageTokenSubscriptions(subAllData.nextPageToken || null);
+        setMainHasMoreSubscriptions(!!subAllData.nextPageToken);
       } catch (err) {
         console.error("Erro ao buscar dados do YouTube:", err);
         setError("Erro inesperado ao carregar dados do YouTube.");
@@ -1208,10 +1219,12 @@ export default function Page() {
           setSidebarPageTokenPlaylists(plData.nextPageToken);
           setHasMorePlaylists(!!plData.nextPageToken);
 
-          const plAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=500`);
+          const plAllRes = await fetchWithRetry(tokenResult.accessToken, "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=24");
           if (!plAllRes) { setLoading(false); return; }
           const plAllData = await plAllRes.json();
           setAllPlaylists(plAllData.items || []);
+          setMainPageTokenPlaylists(plAllData.nextPageToken || null);
+          setMainHasMorePlaylists(!!plAllData.nextPageToken);
 
           // Buscar Inscricoes via API route (sidebar)
           const subRes = await fetch("/api/youtube/subscriptions?maxResults=12");
@@ -1221,10 +1234,12 @@ export default function Page() {
           setSidebarPageTokenSubscriptions(subData.nextPageToken);
           setHasMoreSubscriptions(!!subData.nextPageToken);
 
-          const subAllRes = await fetchWithRetry(tokenResult.accessToken, `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=500`);
+          const subAllRes = await fetchWithRetry(tokenResult.accessToken, "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=24");
           if (!subAllRes) { setLoading(false); return; }
           const subAllData = await subAllRes.json();
           setAllSubscriptions(subAllData.items || []);
+          setMainPageTokenSubscriptions(subAllData.nextPageToken || null);
+          setMainHasMoreSubscriptions(!!subAllData.nextPageToken);
         } catch {
           setError("Erro inesperado ao carregar dados.");
         } finally {
@@ -1268,6 +1283,65 @@ export default function Page() {
       setSidebarLoadingMore(false);
     }
   };
+
+  const loadMoreAllPlaylists = async () => {
+    if (!mainPageTokenPlaylists || mainLoadingMorePlaylists || !youtubeToken) return;
+    setMainLoadingMorePlaylists(true);
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=24&pageToken=${mainPageTokenPlaylists}`;
+      const res = await fetchWithRetry(youtubeToken, url);
+      if (!res) return;
+      const data = await res.json();
+      setAllPlaylists((prev) => [...prev, ...(data.items || [])]);
+      setMainPageTokenPlaylists(data.nextPageToken || null);
+      setMainHasMorePlaylists(!!data.nextPageToken);
+    } catch (err) {
+      console.error("Erro ao carregar mais playlists (main):", err);
+    } finally {
+      setMainLoadingMorePlaylists(false);
+    }
+  };
+
+  const loadMoreAllSubscriptions = async () => {
+    if (!mainPageTokenSubscriptions || mainLoadingMoreSubscriptions || !youtubeToken) return;
+    setMainLoadingMoreSubscriptions(true);
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=24&pageToken=${mainPageTokenSubscriptions}`;
+      const res = await fetchWithRetry(youtubeToken, url);
+      if (!res) return;
+      const data = await res.json();
+      setAllSubscriptions((prev) => [...prev, ...(data.items || [])]);
+      setMainPageTokenSubscriptions(data.nextPageToken || null);
+      setMainHasMoreSubscriptions(!!data.nextPageToken);
+    } catch (err) {
+      console.error("Erro ao carregar mais inscricoes (main):", err);
+    } finally {
+      setMainLoadingMoreSubscriptions(false);
+    }
+  };
+
+  useEffect(() => {
+    const sentinel = mainSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        if (view === "home") {
+          if (mainHasMorePlaylists) loadMoreAllPlaylists();
+          else if (mainHasMoreSubscriptions) loadMoreAllSubscriptions();
+        } else if (view === "playlists") {
+          if (mainHasMorePlaylists) loadMoreAllPlaylists();
+        } else if (view === "artists") {
+          if (mainHasMoreSubscriptions) loadMoreAllSubscriptions();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [view, mainHasMorePlaylists, mainHasMoreSubscriptions, mainPageTokenPlaylists, mainPageTokenSubscriptions]);
 
   const featuredSearchResult = searchPlaylists[0]
     ? {
@@ -1443,15 +1517,20 @@ export default function Page() {
                     {loading ? (
                       Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
                     ) : (
-                      allPlaylists.slice(0, 12).map((pl) => (
-                        <SpotifyCard
-                          key={pl.id}
-                          title={pl.snippet.title}
-                          subtitle={`De ${pl.snippet.channelTitle}`}
-                          image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
-                          onClick={() => openPlaylistDetail(pl, "home")}
-                        />
-                      ))
+                      <>
+                        {allPlaylists.map((pl) => (
+                          <SpotifyCard
+                            key={pl.id}
+                            title={pl.snippet.title}
+                            subtitle={`De ${pl.snippet.channelTitle}`}
+                            image={pl.snippet.thumbnails?.high?.url || pl.snippet.thumbnails?.medium?.url}
+                            onClick={() => openPlaylistDetail(pl, "home")}
+                          />
+                        ))}
+                        {mainLoadingMorePlaylists && Array(3).fill(0).map((_, i) => (
+                          <div key={`skeleton-pl-${i}`} className="bg-[#181818] h-64 rounded-lg animate-pulse" />
+                        ))}
+                      </>
                     )}
                   </div>
                 </section>
@@ -1471,19 +1550,26 @@ export default function Page() {
                     {loading ? (
                       Array(6).fill(0).map((_, i) => <div key={i} className="bg-[#181818] h-64 rounded-lg animate-pulse" />)
                     ) : (
-                      allSubscriptions.slice(0, 12).map((sub) => (
-                        <SpotifyCard
-                          key={sub.id}
-                          title={sub.snippet.title}
-                          subtitle="Canal"
-                          type="artist"
-                          image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
-                          onClick={() => openArtistDetail(sub, "home")}
-                        />
-                      ))
+                      <>
+                        {allSubscriptions.map((sub) => (
+                          <SpotifyCard
+                            key={sub.id}
+                            title={sub.snippet.title}
+                            subtitle="Canal"
+                            type="artist"
+                            image={sub.snippet.thumbnails?.high?.url || sub.snippet.thumbnails?.medium?.url}
+                            onClick={() => openArtistDetail(sub, "home")}
+                          />
+                        ))}
+                        {mainLoadingMoreSubscriptions && Array(3).fill(0).map((_, i) => (
+                          <div key={`skeleton-sub-${i}`} className="bg-[#181818] h-64 rounded-lg animate-pulse" />
+                        ))}
+                      </>
                     )}
                   </div>
                 </section>
+
+                <div ref={mainSentinelRef} className="h-1" />
               </>
             ) : view === "search" ? (
               <section className="space-y-6">
@@ -2006,7 +2092,11 @@ export default function Page() {
                       onClick={() => openArtistDetail(sub, "artists")}
                     />
                   ))}
+                  {mainLoadingMoreSubscriptions && Array(3).fill(0).map((_, i) => (
+                    <div key={`skeleton-sub-mt-${i}`} className="bg-[#181818] h-64 rounded-lg animate-pulse" />
+                  ))}
                 </div>
+                <div ref={mainSentinelRef} className="h-1" />
               </section>
             ) : (
               /* Visualização "Mostrar Tudo" de Playlists */
@@ -2024,7 +2114,11 @@ export default function Page() {
                       onClick={() => openPlaylistDetail(pl, "playlists")}
                     />
                   ))}
+                  {mainLoadingMorePlaylists && Array(3).fill(0).map((_, i) => (
+                    <div key={`skeleton-pl-mt-${i}`} className="bg-[#181818] h-64 rounded-lg animate-pulse" />
+                  ))}
                 </div>
+                <div ref={mainSentinelRef} className="h-1" />
               </section>
             )}
           </div>
