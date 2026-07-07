@@ -1642,7 +1642,7 @@ export default function Page() {
                   </div>
                   <div className="flex flex-col gap-2 pb-2">
                     <span className="text-xs font-bold text-white uppercase tracking-wider">Playlist pública</span>
-                    <h1 className="text-4xl md:text-7xl font-black text-white tracking-tighter mb-2">{selectedPlaylist.snippet.title}</h1>
+                            <h1 className="text-4xl md:text-7xl font-black text-white tracking-tighter mb-2">{selectedPlaylist.snippet.title.length > 50 ? `${selectedPlaylist.snippet.title.slice(0, 50)}...` : selectedPlaylist.snippet.title}</h1>
                     <div className="flex items-center gap-2 text-white/90 text-sm">
                       <div className="w-6 h-6 rounded-full overflow-hidden bg-white/10">
                         {session?.user.image && <img src={session.user.image} alt="" className="w-full h-full object-cover" />}
